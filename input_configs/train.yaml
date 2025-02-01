@@ -22,9 +22,9 @@ model:
   num_pe_time_anchors: 10
   output_bypass_object: True
   output_bypass_style: True
-  arch_view_net: 14
-  arch_view_mix_streams: 0
-  arch_view_disable_tl: bool = True
+  arch_style_net: 14
+  arch_style_mix_streams: 0
+  arch_style_disable_tl: bool = True
   output_bypass_alpha_style: 5
   output_bypass_alpha_object: 5
 eval:

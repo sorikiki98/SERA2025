@@ -128,7 +128,7 @@ class TextualInversionDataset(Dataset):
                     placeholder_object_token))
         else:
             img['input_ids_placeholder_object'] = torch.tensor(-1)
-        img['input_ids_placeholder_view'] = torch.tensor(
+        img['input_ids_placeholder_style'] = torch.tensor(
             self.tokenizer.convert_tokens_to_ids(style_token))
         img['input_ids'] = self.tokenizer(
             img['text'],

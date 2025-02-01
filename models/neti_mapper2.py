@@ -36,7 +36,7 @@ class NeTIMapper(nn.Module):
             placeholder_style_tokens: List[str] = None,
             placeholder_style_token_ids: torch.Tensor = None,
             arch_view_net: int = 0,
-            arch_view_mix_streams: int = 0,
+            arch_style_mix_streams: int = 0,
             arch_view_disable_tl: bool = True,
             original_ti_init_embed=None,
             original_ti: bool = False,
@@ -69,6 +69,9 @@ class NeTIMapper(nn.Module):
         self.output_bypass_alpha = output_bypass_alpha
         self.num_unet_layers = len(unet_layers)
         self.placeholder_object_token = placeholder_object_token  # does nothing
+        self.arch_style_mix_streams = arch_style_mix_streams
+        self.bypass_unconstrained = bypass_unconstrained
+
         if original_ti and output_bypass:
             raise ValueError(
                 f"If doing cfg.model.original_ti=[True]",

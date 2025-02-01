@@ -158,7 +158,7 @@ class Coach:
 
                     # Let's make sure we don't update any embedding weights besides the newly added token
                     # This isn't really needed, but we'll keep it for consistency with the original code
-                    index_no_updates = torch.arange(len(self.tokenizer)) != self.placeholder_token_id
+                    index_no_updates = torch.arange(len(self.tokenizer)) != self.placeholder_token_ids
                     with torch.no_grad():
                         self.accelerator.unwrap_model(self.text_encoder).get_input_embeddings().weight[
                             index_no_updates] = orig_embeds_params[index_no_updates]
@@ -348,14 +348,14 @@ class Coach:
             use_positional_encoding_style,
             num_pe_time_anchors=self.cfg.model.num_pe_time_anchors,
             pe_sigmas=self.cfg.model.pe_sigmas,
-            arch_view_net=self.cfg.model.arch_view_net,
-            arch_view_mix_streams=self.cfg.model.arch_view_mix_streams,
-            arch_view_disable_tl=self.cfg.model.arch_view_disable_tl,
+            arch_view_net=self.cfg.model.arch_style_net,
+            arch_style_mix_streams=self.cfg.model.arch_style_mix_streams,
+            arch_view_disable_tl=self.cfg.model.arch_style_disable_tl,
             output_bypass=self.cfg.model.output_bypass_style,
             original_ti=self.cfg.model.original_ti,
-            original_ti_init_embed=original_ti_init_embed)
-        # output_bypass_alpha=self.cfg.model.output_bypass_alpha_view,
-        # bypass_unconstrained=self.cfg.model.bypass_unconstrained_view)
+            original_ti_init_embed=original_ti_init_embed,
+            output_bypass_alpha=self.cfg.model.output_bypass_alpha_style,
+            bypass_unconstrained=self.cfg.model.bypass_unconstrained_style)
 
         return neti_mapper_object_lookup, neti_mapper_style, loaded_iteration
 

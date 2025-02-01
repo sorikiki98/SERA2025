@@ -91,9 +91,9 @@ class ModelConfig:
     # Whether training should be resumed from a previous checkpoint.
     mapper_checkpoint_path: Optional[Path] = None
     # configuration for view neti-mappers. Ignored by object neti-mappers
-    arch_view_net: int = 0
-    arch_view_mix_streams: int = 0
-    arch_view_disable_tl: bool = True
+    arch_style_net: int = 0
+    arch_style_mix_streams: int = 0
+    arch_style_disable_tl: bool = True
     # Run as original-TI. A single vector is learned per placeholder token.
     original_ti: bool = False
     # free movement in the bypass space
