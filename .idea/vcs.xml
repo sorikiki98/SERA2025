@@ -4,6 +4,5 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/src/clip" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/src/taming-transformers" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/transformers" vcs="Git" />
   </component>
 </project>

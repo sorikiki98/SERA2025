@@ -7,7 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/transformers/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
     </content>
-    <orderEntry type="jdk" jdkName="SERA2025" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="sera2025" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

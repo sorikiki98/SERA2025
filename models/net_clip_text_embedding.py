@@ -28,8 +28,8 @@ class NeTICLIPTextEmbeddings(nn.Module):
         self.mapper_style = mapper_style
 
         # because its a dict, it won't put the mappers on cuda automatically
-        for k, v in self.mapper_object_lookup.items():
-            self.mapper_object_lookup[k] = v.to(device)
+        # for k, v in self.mapper_object_lookup.items():
+        #     self.mapper_object_lookup[k] = v.to(device)
 
     def forward(
             self,

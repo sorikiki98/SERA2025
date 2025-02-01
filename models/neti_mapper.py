@@ -1,5 +1,5 @@
 import random
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 import torch
 import torch.nn.functional as F
@@ -13,7 +13,9 @@ from utils.types import PESigmas
 class NeTIMapper(nn.Module):
     """ Main logic of our NeTI mapper. """
 
-    def __init__(self, output_dim: int = 768,
+    def __init__(self,
+                 embedding_type: Literal['style', 'view'],
+                 output_dim: int = 768,
                  unet_layers: List[str] = UNET_LAYERS,
                  use_nested_dropout: bool = True,
                  nested_dropout_prob: float = 0.5,
@@ -21,14 +23,25 @@ class NeTIMapper(nn.Module):
                  use_positional_encoding: bool = True,
                  num_pe_time_anchors: int = 10,
                  pe_sigmas: PESigmas = PESigmas(sigma_t=0.03, sigma_l=2.0),
-                 output_bypass: bool = True):
+                 output_bypass: bool = True,
+                 placeholder_style_tokens: List[str] = None,
+                 placeholder_style_token_ids: torch.Tensor = None,
+                 ):
+
         super().__init__()
+
+        self.embedding_type = embedding_type
         self.use_nested_dropout = use_nested_dropout
         self.nested_dropout_prob = nested_dropout_prob
         self.norm_scale = norm_scale
         self.output_bypass = output_bypass
         if self.output_bypass:
             output_dim *= 2  # Output two vectors
+
+        if self.embedding_type == "view":
+            self.placeholder_style_tokens = placeholder_style_tokens
+            self.placeholder_style_token_ids = placeholder_style_token_ids
+            self._prepare_view_token_param_lookup(rescale_min_max=True)
 
         self.use_positional_encoding = use_positional_encoding
         if self.use_positional_encoding:

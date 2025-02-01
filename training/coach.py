@@ -17,7 +17,7 @@ from transformers import CLIPTokenizer
 from checkpoint_handler import CheckpointHandler
 from constants import UNET_LAYERS
 from models.neti_clip_text_encoder import NeTICLIPTextModel
-from models.neti_mapper import NeTIMapper
+from models.neti_mapper2 import NeTIMapper
 from models.xti_attention_processor import XTIAttenProc
 from training.config import RunConfig
 from training.dataset import TextualInversionDataset
@@ -405,8 +405,8 @@ class Coach:
         self.text_encoder.text_model.final_layer_norm.requires_grad_(False)
         self.text_encoder.text_model.embeddings.position_embedding.requires_grad_(False)
         # Make sure to train the mapper
-        self.text_encoder.text_model.embeddings.mapper.requires_grad_(True)
-        self.text_encoder.text_model.embeddings.mapper.train()
+        self.text_encoder.text_model.embeddings.mapper_style.requires_grad_(True)
+        self.text_encoder.text_model.embeddings.mapper_style.train()
         if self.cfg.optim.gradient_checkpointing:
             # Keep unet in train mode if we are using gradient checkpointing to save memory.
             # The dropout cannot be != 0 so it doesn't matter if we are in eval or train mode.
@@ -441,7 +441,7 @@ class Coach:
                                             self.cfg.optim.train_batch_size *
                                             self.accelerator.num_processes)
         optimizer = torch.optim.AdamW(
-            self.text_encoder.text_model.embeddings.mapper.parameters(),  # only optimize the embeddings
+            self.text_encoder.text_model.embeddings.mapper_style.parameters(),  # only optimize the embeddings
             lr=self.cfg.optim.learning_rate,
             betas=(self.cfg.optim.adam_beta1, self.cfg.optim.adam_beta2),
             weight_decay=self.cfg.optim.adam_weight_decay,
