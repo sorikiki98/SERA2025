@@ -39,16 +39,14 @@ class Coach:
         if self.cfg.optim.allow_tf32:
             torch.backends.cuda.matmul.allow_tf32 = True
 
-        # Initialize all models
+        # Initialize models
         self.tokenizer, self.noise_scheduler, self.text_encoder, self.vae, self.unet = self._init_sd_models()
-        neti_mapper_object_lookup, neti_mapper_style, self.loaded_iteration = self._init_neti_mapper()
-        self.text_encoder.text_model.embeddings.set_mapper(neti_mapper_object_lookup, neti_mapper_style)
-        self._freeze_all_modules()
-        self._set_attn_processor()
 
         # Initialize dataset and dataloader
         self.train_dataset = self._init_dataset()
         self.train_dataloader = self._init_dataloader(dataset=self.train_dataset)
+
+        # Initialize placeholder tokens
         self.placeholder_style_tokens = self.train_dataset.placeholder_style_tokens
         self.placeholder_object_tokens = self.train_dataset.placeholder_object_tokens
         self.fixed_object_token = self.train_dataset.fixed_object_token
@@ -63,6 +61,12 @@ class Coach:
         )
 
         self.cfg.data.placeholder_style_tokens = self.placeholder_style_tokens
+
+        # Initialize mapper and set mapper
+        neti_mapper_object_lookup, neti_mapper_style, self.loaded_iteration = self._init_neti_mapper()
+        self.text_encoder.text_model.embeddings.set_mapper(neti_mapper_object_lookup, neti_mapper_style)
+        self._freeze_all_modules()
+        self._set_attn_processor()
 
         # Initialize optimizer and scheduler
         self.optimizer = self._init_optimizer()
@@ -460,7 +464,6 @@ class Coach:
             gradient_accumulation_steps=self.cfg.optim.gradient_accumulation_steps,
             mixed_precision=self.cfg.optim.mixed_precision,
             log_with=self.cfg.log.report_to,
-            logging_dir=self.cfg.log.logging_dir,
             project_config=accelerator_project_config,
         )
         self.logger.log_message(accelerator.state)

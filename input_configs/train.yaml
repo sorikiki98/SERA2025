@@ -14,16 +14,18 @@ model:
   use_nested_dropout: True
   nested_dropout_prob: 0.5
   arch_mlp_hidden_dims: 64
-  normalize_mapper_output: True
-  use_positional_encoding: True
+  normalize_object_mapper_output: True
+  normalize_style_mapper_output: True
+  use_positional_encoding_object: True
+  use_positional_encoding_style: True
   pe_sigmas: { 'sigma_t': 0.03, 'sigma_l': 2.0 }
   num_pe_time_anchors: 10
   output_bypass_object: True
   output_bypass_style: True
   arch_view_net: 14
-  arch_view_mix_streams: int = 0
+  arch_view_mix_streams: 0
   arch_view_disable_tl: bool = True
-  output_bypass_alpha_view: 5
+  output_bypass_alpha_style: 5
   output_bypass_alpha_object: 5
 eval:
   validation_steps: 250
