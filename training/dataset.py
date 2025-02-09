@@ -119,10 +119,8 @@ class TextualInversionDataset(Dataset):
         attr = img['attr']
         img['image_idx'] = idx
         style_token = f'<style_{attr}>'
-        print(style_token)
         img['pixel_values'] = self.get_pixel_values(idx)
         img['text'] = random.choice(self.templates).format(self.fixed_object_token, style_token)
-        print(img['text'])
 
         if self.fixed_object_token_pretrained:
             img['input_ids_placeholder_object'] = torch.tensor(

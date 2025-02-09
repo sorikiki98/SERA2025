@@ -17,7 +17,7 @@ from transformers import CLIPTokenizer
 from checkpoint_handler import CheckpointHandler
 from constants import UNET_LAYERS
 from models.neti_clip_text_encoder import NeTICLIPTextModel
-from models.neti_mapper2 import NeTIMapper
+from models.neti_mapper import NeTIMapper
 from models.xti_attention_processor import XTIAttenProc
 from training.config import RunConfig
 from training.dataset import TextualInversionDataset
