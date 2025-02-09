@@ -59,6 +59,7 @@ class NeTIMapper(nn.Module):
         """
         super().__init__()
         self.embedding_type = embedding_type
+        self.token_embed_dim = token_embed_dim
         self.arch_view_net = arch_view_net
         self.use_nested_dropout = use_nested_dropout
         self.nested_dropout_prob = nested_dropout_prob
@@ -143,7 +144,7 @@ class NeTIMapper(nn.Module):
     def set_input_layer(self, num_unet_layers: int,
                         num_time_anchors: int) -> nn.Module:
         if self.use_positional_encoding:
-            input_layer = nn.Linear(self.encoder.num_w * 2 + self.token_embed_dim, self.input_dim)
+            input_layer = nn.Linear(self.encoder.num_w * 3, self.input_dim)
             input_layer.weight.data = self.encoder.init_layer(
                 num_time_anchors, num_unet_layers)
         else:
@@ -189,19 +190,15 @@ class NeTIMapper(nn.Module):
                           unet_layer: torch.Tensor,
                           input_ids_placeholder_style: torch.Tensor,
                           tokenizer: nn.Embedding) -> torch.Tensor:
-        """ Encode the (t,l) params """
+        """ Encode the (t,l, style_token_embed) params """
+        style_input = tokenizer(input_ids_placeholder_style)
         encoded_input = self.encoder.encode(
             timestep,
             unet_layer,
-        )  # (bs,2048)
+            style_input
+        )  # (bs,2304)
 
-        # todo 1. get style token embedding (bs, 768)
-        style_input = tokenizer(input_ids_placeholder_style)
-
-        # todo 2. concat encoded_input + style_input
-        concat_input = torch.cat((encoded_input, style_input), dim=1)
-
-        return self.input_layer(concat_input)  # (bs, 160)
+        return self.input_layer(encoded_input)  # (bs, 160)
 
     def _prepare_style_token_param_lookup(self):
         """
@@ -256,7 +253,7 @@ class NeTIMapper(nn.Module):
     def extract_hidden_representation(
             self, timestep: torch.Tensor, unet_layer: torch.Tensor,
             input_ids_placeholder_style: torch.Tensor,
-            tokenizer: nn.Embeding) -> torch.Tensor:
+            tokenizer: nn.Embedding) -> torch.Tensor:
         if self.embedding_type == 'object':
             pass
         elif self.embedding_type == 'style':

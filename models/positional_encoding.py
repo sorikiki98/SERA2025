@@ -1,4 +1,3 @@
-
 import ipdb
 
 from typing import Union, List
@@ -11,7 +10,7 @@ from torch import Tensor
 class NeTIPositionalEncoding(nn.Module):
     """ Inherited from NeTI, but we don't use this class"""
 
-    def __init__(self, sigma_t: float, sigma_l: float, num_w: int = 1024):
+    def __init__(self, sigma_t: float, sigma_l: float, num_w: int = 768):
         super().__init__()
         self.sigma_t = sigma_t
         self.sigma_l = sigma_l
@@ -24,26 +23,32 @@ class NeTIPositionalEncoding(nn.Module):
     def encode(self,
                t: Union[int, torch.Tensor],
                l: Union[int, torch.Tensor],
-               debug=False):
-        """ Maps the given time and layer input into a 2048-dimensional vector. """
+               token_embed: torch.Tensor = None):
+        """ Maps the given time and layer input into a 2816-dimensional vector. """
         if type(t) == int or t.ndim == 0:
             x = torch.tensor([t, l]).float()
         else:
             x = torch.stack([t, l], dim=1).T  # (2,bs)
         x = x.cuda()  # (2,)
+        if token_embed is None:
+            token_embed = torch.randn(self.num_w)
+        token_embed = token_embed.cuda()
         v = torch.cat(
-            [torch.sin(self.w.detach() @ x),
-             torch.cos(self.w.detach() @ x)])  # (2048,bs)
+            [torch.sin(self.w.detach() @ x),  # (768, 2) @ (2, bs) or (768, 2) @ (2)
+             torch.cos(self.w.detach() @ x),
+             token_embed.T])  # (2304,bs)
         if type(t) == int:
             v_norm = v / v.norm()
         else:
-            v_norm = v / v.norm(dim=0)  # (2048,bs)
-            v_norm = v_norm.T  # (bs,2048)
+            v_norm = v / v.norm(dim=0)  # (2304,bs)
+            v_norm = v_norm.T  # (bs,2304)
         return v_norm
 
     def init_layer(self, num_time_anchors: int,
                    num_layers: int) -> torch.Tensor:
         """ Computes the weights for the positional encoding layer of size 160x2048."""
+        # todo: 160x2048 -> 160x2304
+
         anchor_vectors = []
         for t_anchor in range(0, 1000, 1000 // num_time_anchors):
             for l_anchor in range(0, num_layers):
@@ -78,6 +83,7 @@ class BasicEncoder(nn.Module):
 
 
 import math
+
 
 class PositionalEncoding(nn.Module):
     """ not used """
@@ -119,8 +125,8 @@ class FourierPositionalEncoding(nn.Module):
         self.normalize = normalize
 
     def forward(
-        self,
-        x: torch.Tensor,
+            self,
+            x: torch.Tensor,
     ):
         """
         Maps the given time and layer input into a 2048-dimensional vector.
@@ -198,6 +204,7 @@ class FourierPositionalEncodingNDims(nn.Module):
 
 if __name__ == "__main__":
     import sys
+
     sys.path.append(".")
     sys.path.append("..")
     from utils.types import PESigmas

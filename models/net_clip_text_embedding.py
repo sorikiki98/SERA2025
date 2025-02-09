@@ -105,8 +105,8 @@ class NeTICLIPTextEmbeddings(nn.Module):
                 mapper_style_outputs = self.mapper_style(  # dict
                     timestep=batch.timesteps.float(),
                     unet_layer=batch.unet_layers.float(),
-                    input_ids_placeholder_style=batch.
-                    input_ids_placeholder_style,
+                    input_ids_placeholder_style=batch.input_ids_placeholder_style,
+                    tokenizer=self.token_embedding,
                     truncation_idx=batch.truncation_idx)  # return dict, word_embedding (2, 768)
                 # strength of the output bypass -> to pass up to the encoder
                 output_bypass_alpha_style = mapper_style_outputs.output_bypass_alpha
@@ -132,6 +132,6 @@ class NeTICLIPTextEmbeddings(nn.Module):
         position_embeddings = self.position_embedding(position_ids)
         embeddings = inputs_embeds + position_embeddings
 
-        return (embㄹeddings, bypass_outputs_object, bypass_outputs_style,
+        return (embeddings, bypass_outputs_object, bypass_outputs_style,
                 bypass_unconstrained_object, bypass_unconstrained_style,
                 output_bypass_alpha_object, output_bypass_alpha_style)
