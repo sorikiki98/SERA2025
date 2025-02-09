@@ -74,7 +74,7 @@ class NeTICLIPTextTransformer(CLIPTextTransformer):
                                 self.config.output_hidden_states)
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        bypass_outputs_object, bypass_outputs_view = None, None
+        bypass_outputs_object, bypass_outputs_style = None, None
 
         if input_ids is not None:  # Regular embedding logic
             input_shape = input_ids.size()
@@ -204,7 +204,7 @@ class NeTICLIPTextTransformer(CLIPTextTransformer):
         else:
             raise ValueError("You have to specify either batch or input_ids!")
 
-        if bypass_outputs_object is not None or bypass_outputs_view is not None:
+        if bypass_outputs_object is not None or bypass_outputs_style is not None:
             return BaseModelOutputWithPooling(
                 last_hidden_state=last_hidden_state,
                 pooler_output=pooled_output,

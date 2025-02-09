@@ -23,6 +23,7 @@ class NeTIMapper(nn.Module):
             self,
             embedding_type: Literal['object', 'style'],
             output_dim: int = 768,
+            token_embed_dim: int = 768,
             unet_layers: List[str] = UNET_LAYERS,
             arch_mlp_hidden_dims: int = 128,
             use_nested_dropout: bool = True,
@@ -118,9 +119,9 @@ class NeTIMapper(nn.Module):
                                 num_time_anchors=num_pe_time_anchors,
                                 output_dim=output_dim)
         elif self.embedding_type == "style":
-            self.set_net_view(num_unet_layers=len(unet_layers),
-                              num_time_anchors=num_pe_time_anchors,
-                              output_dim=output_dim)
+            self.set_net_style(num_unet_layers=len(unet_layers),
+                               num_time_anchors=num_pe_time_anchors,
+                               output_dim=output_dim)
 
     def set_net_object(self,
                        num_unet_layers: int,
@@ -142,7 +143,7 @@ class NeTIMapper(nn.Module):
     def set_input_layer(self, num_unet_layers: int,
                         num_time_anchors: int) -> nn.Module:
         if self.use_positional_encoding:
-            input_layer = nn.Linear(self.encoder.num_w * 2, self.input_dim)
+            input_layer = nn.Linear(self.encoder.num_w * 2 + self.token_embed_dim, self.input_dim)
             input_layer.weight.data = self.encoder.init_layer(
                 num_time_anchors, num_unet_layers)
         else:
@@ -153,6 +154,7 @@ class NeTIMapper(nn.Module):
                 timestep: torch.Tensor,
                 unet_layer: torch.Tensor,
                 input_ids_placeholder_style: torch.Tensor,
+                tokenizer: nn.Embedding,
                 truncation_idx: int = None) -> MapperOutput:
         """
         Args:
@@ -173,7 +175,7 @@ class NeTIMapper(nn.Module):
             return embedding
 
         embedding = self.extract_hidden_representation(
-            timestep, unet_layer, input_ids_placeholder_style)
+            timestep, unet_layer, input_ids_placeholder_style, tokenizer)  # [2, 768 * 2]
 
         if self.use_nested_dropout:
             embedding = self.apply_nested_dropout(
@@ -185,7 +187,8 @@ class NeTIMapper(nn.Module):
 
     def get_encoded_input(self, timestep: torch.Tensor,
                           unet_layer: torch.Tensor,
-                          input_ids_placeholder_style: torch.Tensor) -> torch.Tensor:
+                          input_ids_placeholder_style: torch.Tensor,
+                          tokenizer: nn.Embedding) -> torch.Tensor:
         """ Encode the (t,l) params """
         encoded_input = self.encoder.encode(
             timestep,
@@ -193,9 +196,12 @@ class NeTIMapper(nn.Module):
         )  # (bs,2048)
 
         # todo 1. get style token embedding (bs, 768)
+        style_input = tokenizer(input_ids_placeholder_style)
 
         # todo 2. concat encoded_input + style_input
-        return self.input_layer(encoded_input)  # (bs, 160)
+        concat_input = torch.cat((encoded_input, style_input), dim=1)
+
+        return self.input_layer(concat_input)  # (bs, 160)
 
     def _prepare_style_token_param_lookup(self):
         """
@@ -211,7 +217,7 @@ class NeTIMapper(nn.Module):
         For inference, this is handled by the CheckpointHandler.load_mapper()
         method (which calls the public-facing function `add_view_tokens_to_vocab`).
         But if this func is run with `rescale_min_max=True` with the wrong
-        placeholders set to self, then the generations will become weird
+        placeholders [set] to self, then the generations will become weird
         """
         assert len(self.placeholder_style_tokens) == len(
             self.placeholder_style_token_ids)
@@ -249,11 +255,12 @@ class NeTIMapper(nn.Module):
 
     def extract_hidden_representation(
             self, timestep: torch.Tensor, unet_layer: torch.Tensor,
-            input_ids_placeholder_style: torch.Tensor) -> torch.Tensor:
+            input_ids_placeholder_style: torch.Tensor,
+            tokenizer: nn.Embeding) -> torch.Tensor:
         if self.embedding_type == 'object':
             pass
         elif self.embedding_type == 'style':
-            encoded_input_style = self.get_encoded_input(timestep, unet_layer, input_ids_placeholder_style)
+            encoded_input_style = self.get_encoded_input(timestep, unet_layer, input_ids_placeholder_style, tokenizer)
             embedding = self.net(encoded_input_style)
         else:
             raise ValueError()
@@ -329,10 +336,10 @@ class NeTIMapper(nn.Module):
         # recreate the lookup table WITHOUT rescaling the ranges of the MLP
         self._prepare_view_token_param_lookup(rescale_min_max=False)
 
-    def set_net_view(self,
-                     num_unet_layers: int,
-                     num_time_anchors: int,
-                     output_dim: int = 768):
+    def set_net_style(self,
+                      num_unet_layers: int,
+                      num_time_anchors: int,
+                      output_dim: int = 768):
         # Original-TI (also has arch-code-1)
         if self.original_ti or self.arch_view_net == 1:
             # baseline - TI baseline, which is one thing no matter what.

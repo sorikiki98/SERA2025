@@ -49,7 +49,7 @@ class NeTICLIPTextEmbeddings(nn.Module):
             position_ids = self.position_ids[:, :seq_length]
 
         if inputs_embeds is None:
-            inputs_embeds = self.token_embedding(input_ids)
+            inputs_embeds = self.token_embedding(input_ids)  # [2, 77, 768]
 
         ####################################################################
         # NeTI logic - Use mapper to overwrite the learnable token embedding
@@ -97,7 +97,7 @@ class NeTICLIPTextEmbeddings(nn.Module):
                 assert all(locs.sum(1) == 1)
                 inputs_embeds[torch.where(locs)] = word_embedding
 
-            # The second term in the if statement checks that input_view_ids are pasesd
+            # The second term in the if statement checks that input_view_ids are passed
             # This is bc, even if a mapper_view exists, we may still test prompts that
             # don't include that token.
             if self.mapper_style is not None and not all(
@@ -107,7 +107,7 @@ class NeTICLIPTextEmbeddings(nn.Module):
                     unet_layer=batch.unet_layers.float(),
                     input_ids_placeholder_style=batch.
                     input_ids_placeholder_style,
-                    truncation_idx=batch.truncation_idx)
+                    truncation_idx=batch.truncation_idx)  # return dict, word_embedding (2, 768)
                 # strength of the output bypass -> to pass up to the encoder
                 output_bypass_alpha_style = mapper_style_outputs.output_bypass_alpha
 
@@ -132,6 +132,6 @@ class NeTICLIPTextEmbeddings(nn.Module):
         position_embeddings = self.position_embedding(position_ids)
         embeddings = inputs_embeds + position_embeddings
 
-        return (embeddings, bypass_outputs_object, bypass_outputs_style,
+        return (embㄹeddings, bypass_outputs_object, bypass_outputs_style,
                 bypass_unconstrained_object, bypass_unconstrained_style,
                 output_bypass_alpha_object, output_bypass_alpha_style)
