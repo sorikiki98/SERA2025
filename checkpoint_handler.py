@@ -59,7 +59,7 @@ class CheckpointHandler:
         """ Save the mapper and config to be used at inference. """
         cfg_ = RunConfig(**self.cfg.__dict__.copy())
 
-        mapper_object_lookup, mapper_view = text_encoder.text_model.embeddings.mapper_object_lookup, text_encoder.text_model.embeddings.mapper_view
+        mapper_object_lookup, mapper_style = text_encoder.text_model.embeddings.mapper_object_lookup, text_encoder.text_model.embeddings.mapper_style
 
         if mapper_object_lookup is not None:
             state_dict = {"cfg": pyrallis.encode(cfg_), 'mappers': {}}
@@ -78,19 +78,19 @@ class CheckpointHandler:
                 Path(save_name).stem + "_object" + Path(save_name).suffix)
             torch.save(state_dict, fname)
 
-        if mapper_view is not None:
+        if mapper_style is not None:
             state_dict = {
                 "cfg": pyrallis.encode(cfg_),
                 'mappers': {
                     'dummy_key': {
-                        "state_dict": mapper_view.state_dict(),
-                        "encoder": mapper_view.encoder,
+                        "state_dict": mapper_style.state_dict(),
+                        "encoder": mapper_style.encoder,
                         'placeholder_object_token': "dummy",
                     }
                 }
             }
-            if hasattr(mapper_view, "encode_phi"):
-                state_dict.update({"encode_phi": mapper_view.encode_phi})
+            if hasattr(mapper_style, "encode_phi"):
+                state_dict.update({"encode_phi": mapper_style.encode_phi})
 
             fname = os.path.join(
                 self.save_root,

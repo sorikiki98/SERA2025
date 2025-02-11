@@ -112,16 +112,22 @@ class ModelConfig:
 @dataclass
 class EvalConfig:
     """ Parameters for validation """
-    # A list of prompts that will be used during validation to verify that the model is learning
-    validation_prompts: List[str] = field(default_factory=lambda: VALIDATION_PROMPTS)
+    # Prompts for validation (only for learnable_mode=0)
+    validation_prompts: List[str] = field(
+        default_factory=lambda: VALIDATION_PROMPTS)
+    # Prompts for valiation (only for learnable_mode>0)
+    validation_style_tokens: List[str] = None
     # Number of images that should be generated during validation with `validation_prompt`
-    num_validation_images: int = 4
+    num_validation_images: int = 3
     # Seeds to use for generating the validation images
-    validation_seeds: Optional[List[int]] = field(default_factory=lambda: [42, 420, 501, 5456])
+    validation_seeds: Optional[List[int]] = field(
+        default_factory=lambda: [0, 1, 2])
     # Run validation every X steps.
-    validation_steps: int = 100
+    validation_steps: int = 10
     # Number of denoising steps
     num_denoising_steps: int = 50
+    # for learnable_mode==3, which of the `placholder_object_tokens` to include in validation
+    eval_placeholder_object_tokens: List[str] = None
 
     def __post_init__(self):
         if self.validation_seeds is None:

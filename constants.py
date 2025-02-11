@@ -24,10 +24,10 @@ PROMPTS = [
 ]
 
 VALIDATION_PROMPTS = [
-    "A photo of a {}",
-    "A photo of a {} on a beach",
-    "App icon of {}",
-    "A painting of {} in the style of Monet",
+    "A {} black dress with elegant details.",
+    "A {} black dress perfect for evening wear.",
+    "A {} black dress with a minimalist design.",
+    "A {} black dress that flows gracefully.",
 ]
 
 IMAGENET_TEMPLATES_SMALL = [

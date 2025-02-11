@@ -46,7 +46,6 @@ class PromptManager:
                      num_images_per_prompt: int = 1) -> List[Dict[str, Any]]:
         """
         Compute the conditioning vectors for the given prompt. We assume that the prompt is defined using `{}`
-
         for indicating where to place the placeholder token string. See constants.VALIDATION_PROMPTS for examples.
         """
         ids = self.tokenizer(
@@ -62,7 +61,7 @@ class PromptManager:
             locs = torch.isin(ids, torch.tensor(placeholder_token_ids))
             if locs.sum() == 0:
                 return torch.tensor([-1])
-            assert locs.sum(1), f"should be exactly 1 placeholder_view_token per prompt, for prompt [`{text}`]"
+            assert locs.sum(1), f"should be exactly 1 placeholder_style_token per prompt, for prompt [`{text}`]"
             input_ids_placeholder = ids[torch.where(locs)]
             return input_ids_placeholder
 

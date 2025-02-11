@@ -52,6 +52,11 @@ class Coach:
         print(len(self.placeholder_style_tokens))
         self.placeholder_object_tokens = self.train_dataset.placeholder_object_tokens
         self.fixed_object_token = self.train_dataset.fixed_object_token
+        if self.cfg.eval.validation_style_tokens is not None:
+            assert all([
+                v in self.placeholder_style_tokens
+                for v in self.cfg.eval.validation_style_tokens
+            ])
 
         # add novel concepts
         self.load_pretrained_object_neti = True if self.cfg.data.fixed_object_token_or_path is not None and Path(
@@ -84,7 +89,6 @@ class Coach:
         self._set_model_weight_dtypes(weight_dtype=self.weight_dtype)
         self._init_trackers()
 
-        '''
         self.validator = ValidationHandler(cfg=self.cfg,
                                            placeholder_style_tokens=self.placeholder_style_tokens,
                                            placeholder_style_token_ids=self.placeholder_style_token_ids,
@@ -92,13 +96,26 @@ class Coach:
                                            placeholder_object_token_ids=self.placeholder_object_token_ids,
                                            fixed_object_token=self.fixed_object_token,
                                            weights_dtype=self.weight_dtype)
+
         self.checkpoint_handler = CheckpointHandler(cfg=self.cfg,
                                                     placeholder_style_tokens=self.placeholder_style_tokens,
                                                     placeholder_style_token_ids=self.placeholder_style_token_ids,
                                                     placeholder_object_tokens=self.placeholder_object_tokens,
                                                     placeholder_object_token_ids=self.placeholder_object_token_ids,
                                                     save_root=self.cfg.log.exp_dir)
-        '''
+
+        #### tmp - for testing if the loaded object token works ####
+        if 0:
+            test_prompts = ["A photo of a <car>"]
+            self.validator.infer(accelerator=self.accelerator,
+                                 tokenizer=self.tokenizer,
+                                 text_encoder=self.text_encoder,
+                                 unet=self.unet,
+                                 vae=self.vae,
+                                 prompts=test_prompts,
+                                 num_images_per_prompt=1,
+                                 seeds=[42, 420, 501],
+                                 step=0)
 
     def train(self):
         total_batch_size = self.cfg.optim.train_batch_size * self.accelerator.num_processes * \
@@ -171,24 +188,20 @@ class Coach:
                     global_step += 1
                     self.logger.update_step(step=global_step)
                     if self._should_save(global_step=global_step):
-                        '''
                         self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
                                                            accelerator=self.accelerator,
                                                            embeds_save_name=f"learned_embeds-steps-{global_step}.bin",
                                                            mapper_save_name=f"mapper-steps-{global_step}.pt")
-                        '''
+
                     if self._should_eval(global_step=global_step):
-                        '''
                         self.validator.infer(accelerator=self.accelerator,
                                              tokenizer=self.tokenizer,
                                              text_encoder=self.text_encoder,
                                              unet=self.unet,
                                              vae=self.vae,
-                                             prompts=self.cfg.eval.validation_prompts,
                                              num_images_per_prompt=self.cfg.eval.num_validation_images,
                                              seeds=self.cfg.eval.validation_seeds,
                                              step=global_step)
-                        '''
 
                 logs = {"total_loss": loss.detach().item(), "lr": self.lr_scheduler.get_last_lr()[0]}
                 progress_bar.set_postfix(**logs)
@@ -200,12 +213,10 @@ class Coach:
         # Save the final model
         self.accelerator.wait_for_everyone()
         if self.accelerator.is_main_process:
-            '''
             self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
                                                accelerator=self.accelerator,
                                                embeds_save_name=f"learned_embeds-final.bin",
                                                mapper_save_name=f"mapper-final.pt")
-            '''
         self.accelerator.end_training()
 
     def get_text_conditioning(self, input_ids: torch.Tensor,

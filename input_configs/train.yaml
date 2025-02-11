@@ -1,7 +1,7 @@
 log:
-  exp_name: exp_name
-  exp_dir: /path/to/experiments
-  save_steps: 250
+  exp_name: fashion200k
+  exp_dir: exp/style-inversion
+  save_steps: 10
 data:
   train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion200k\\
   placeholder_object_token: <object>
@@ -28,7 +28,12 @@ model:
   output_bypass_alpha_style: 5
   output_bypass_alpha_object: 5
 eval:
-  validation_steps: 250
+  validation_steps: 10
+  num_denoising_steps: 50
+  validation_seeds: [ 0, 1, 2 ]
+  num_validation_images: 3
+  validation_style_tokens: [<style_rose>, <style_v-neck>, <style_velvet>, <style_sleeveless>]
+  eval_placeholder_object_tokens: [ <skull>, <statue>, <statue2>, <toy> ]
 optim:
   max_train_steps: 1000
   learning_rate: 1e-3
