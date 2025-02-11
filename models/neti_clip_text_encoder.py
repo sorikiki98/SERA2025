@@ -93,7 +93,6 @@ class NeTICLIPTextTransformer(CLIPTextTransformer):
              output_bass_alpha_object,
              output_bass_alpha_style) = self.embeddings(
                 batch=batch, position_ids=position_ids)
-
         else:
             raise ValueError("You have to specify either batch or input_ids!")
 

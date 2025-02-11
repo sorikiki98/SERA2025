@@ -36,9 +36,9 @@ class NeTIMapper(nn.Module):
             output_bypass: bool = True,
             placeholder_style_tokens: List[str] = None,
             placeholder_style_token_ids: torch.Tensor = None,
-            arch_view_net: int = 0,
+            arch_style_net: int = 0,
             arch_style_mix_streams: int = 0,
-            arch_view_disable_tl: bool = True,
+            arch_style_disable_tl: bool = True,
             original_ti_init_embed=None,
             original_ti: bool = False,
             bypass_unconstrained: bool = True,
@@ -60,13 +60,13 @@ class NeTIMapper(nn.Module):
         super().__init__()
         self.embedding_type = embedding_type
         self.token_embed_dim = token_embed_dim
-        self.arch_view_net = arch_view_net
+        self.arch_style_net = arch_style_net
         self.use_nested_dropout = use_nested_dropout
         self.nested_dropout_prob = nested_dropout_prob
         self.arch_mlp_hidden_dims = arch_mlp_hidden_dims
         self.norm_scale = norm_scale
         self.original_ti = original_ti
-        self.arch_view_disable_tl = arch_view_disable_tl
+        self.arch_style_disable_tl = arch_style_disable_tl
         self.original_ti_init_embed = original_ti_init_embed
         self.output_bypass_alpha = output_bypass_alpha
         self.num_unet_layers = len(unet_layers)
@@ -91,7 +91,7 @@ class NeTIMapper(nn.Module):
         # set up positional encoding. For older experiments (arch_view_net<14),
         # use the legacy (t,l) conditioning. For later exps, call func for setup
         self.pe_sigmas = pe_sigmas
-        if self.arch_view_net <= 14:
+        if self.arch_style_net <= 14:
             self.use_positional_encoding = use_positional_encoding
             if type(self.use_positional_encoding) is bool:
                 self.use_positional_encoding = int(
@@ -164,7 +164,7 @@ class NeTIMapper(nn.Module):
             parameters for that token.
         """
         if self.original_ti or (self.embedding_type == "style"
-                                and self.arch_view_net == 1):
+                                and self.arch_style_net == 1):
             if self.embedding_type == "style":
                 idx = [
                     self.lookup_ti_embedding[p.item()].item()
@@ -191,12 +191,12 @@ class NeTIMapper(nn.Module):
                           input_ids_placeholder_style: torch.Tensor,
                           tokenizer: nn.Embedding) -> torch.Tensor:
         """ Encode the (t,l, style_token_embed) params """
-        style_input = tokenizer(input_ids_placeholder_style)
+        style_input = tokenizer(input_ids_placeholder_style)  # [2, 768]
         encoded_input = self.encoder.encode(
             timestep,
             unet_layer,
             style_input
-        )  # (bs,2304)
+        )  # [bs, 2304]
 
         return self.input_layer(encoded_input)  # (bs, 160)
 
@@ -339,7 +339,7 @@ class NeTIMapper(nn.Module):
                       num_time_anchors: int,
                       output_dim: int = 768):
         # Original-TI (also has arch-code-1)
-        if self.original_ti or self.arch_view_net == 1:
+        if self.original_ti or self.arch_style_net == 1:
             # baseline - TI baseline, which is one thing no matter what.
             assert self.original_ti_init_embed is not None
             if self.output_bypass:

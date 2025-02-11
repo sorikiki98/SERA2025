@@ -48,6 +48,8 @@ class Coach:
 
         # Initialize placeholder tokens
         self.placeholder_style_tokens = self.train_dataset.placeholder_style_tokens
+        print(self.placeholder_style_tokens)
+        print(len(self.placeholder_style_tokens))
         self.placeholder_object_tokens = self.train_dataset.placeholder_object_tokens
         self.fixed_object_token = self.train_dataset.fixed_object_token
 
@@ -253,6 +255,7 @@ class Coach:
         # extract all the placeholder ids
         placeholder_style_token_ids = tokenizer.convert_tokens_to_ids(
             placeholder_style_tokens)
+
         placeholder_object_token_ids = tokenizer.convert_tokens_to_ids(
             placeholder_object_tokens)
         placeholder_token_ids = tokenizer.convert_tokens_to_ids(
@@ -286,12 +289,14 @@ class Coach:
 
         # Initialize the newly added placeholder token with the embeddings of the super category token
         token_embeds = text_encoder.get_input_embeddings().weight.data
+        '''
         token_embeds[placeholder_style_token_ids] = token_embeds[
             super_category_style_token_id].clone().unsqueeze(0).repeat(
             len(placeholder_style_token_ids), 1)
         token_embeds[placeholder_object_token_ids] = token_embeds[
             super_category_object_token_id].clone().unsqueeze(0).repeat(
             len(placeholder_object_token_ids), 1)
+        '''
 
         ## Compute the norm of the super category token embedding for scaling mapper output
         cfg.model.target_norm_style = None
@@ -348,9 +353,9 @@ class Coach:
             use_positional_encoding_style,
             num_pe_time_anchors=self.cfg.model.num_pe_time_anchors,
             pe_sigmas=self.cfg.model.pe_sigmas,
-            arch_view_net=self.cfg.model.arch_style_net,
+            arch_style_net=self.cfg.model.arch_style_net,
             arch_style_mix_streams=self.cfg.model.arch_style_mix_streams,
-            arch_view_disable_tl=self.cfg.model.arch_style_disable_tl,
+            arch_style_disable_tl=self.cfg.model.arch_style_disable_tl,
             output_bypass=self.cfg.model.output_bypass_style,
             original_ti=self.cfg.model.original_ti,
             original_ti_init_embed=original_ti_init_embed,

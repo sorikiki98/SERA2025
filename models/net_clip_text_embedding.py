@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from transformers import CLIPTextConfig
 
-from models.neti_mapper import NeTIMappper
+from models.neti_mapper import NeTIMapper
 from utils.types import NeTIBatch, MapperOutput
 
 

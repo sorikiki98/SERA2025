@@ -29,7 +29,7 @@ class NeTIPositionalEncoding(nn.Module):
             x = torch.tensor([t, l]).float()
         else:
             x = torch.stack([t, l], dim=1).T  # (2,bs)
-        x = x.cuda()  # (2,)
+        x = x.cuda()  # (2,)0000
         if token_embed is None:
             token_embed = torch.randn(self.num_w)
         token_embed = token_embed.cuda()
