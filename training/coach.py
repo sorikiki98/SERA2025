@@ -20,7 +20,7 @@ from models.neti_clip_text_encoder import NeTICLIPTextModel
 from models.neti_mapper import NeTIMapper
 from models.xti_attention_processor import XTIAttenProc
 from training.config import RunConfig
-from training.dataset import TextualInversionDataset
+from data.fashion200k import Fashion200K
 from training.logger import CoachLogger
 from training.validate import ValidationHandler
 from utils.types import NeTIBatch
@@ -433,14 +433,14 @@ class Coach:
     def _set_attn_processor(self):
         self.unet.set_attn_processor(XTIAttenProc())
 
-    def _init_dataset(self) -> TextualInversionDataset:
-        dataset = TextualInversionDataset(fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
-                                          data_root=self.cfg.data.train_data_dir,
-                                          tokenizer=self.tokenizer,
-                                          size=self.cfg.data.resolution,
-                                          repeats=self.cfg.data.repeats,
-                                          center_crop=self.cfg.data.center_crop,
-                                          set="train")
+    def _init_dataset(self) -> Fashion200K:
+        dataset = Fashion200K(fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
+                              data_root=self.cfg.data.train_data_dir,
+                              tokenizer=self.tokenizer,
+                              size=self.cfg.data.resolution,
+                              repeats=self.cfg.data.repeats,
+                              center_crop=self.cfg.data.center_crop,
+                              set="train")
         return dataset
 
     def _init_dataloader(self, dataset: Dataset) -> torch.utils.data.DataLoader:

@@ -1,19 +1,14 @@
-import ipdb
 import random
 from typing import Optional, List, Literal
 
 import torch
 import torch.nn.functional as F
-from torch.nn.utils.parametrizations import spectral_norm
 from torch import nn
 import numpy as np
 
 from constants import UNET_LAYERS
-from models.positional_encoding import NeTIPositionalEncoding, BasicEncoder, PositionalEncoding, \
-    FourierPositionalEncoding, FourierPositionalEncodingNDims
+from models.positional_encoding import NeTIPositionalEncoding, BasicEncoder
 from utils.types import PESigmas, MapperOutput
-from utils.utils import num_to_string, string_to_num
-from training.dataset import TextualInversionDataset
 
 
 class NeTIMapper(nn.Module):
