@@ -39,14 +39,15 @@ def _get_img_path_using_idx(img_caption_data, img_root, idx, is_ref=True):
 
 
 class FashionIQDataset(Dataset):
-    def __init__(self, data_root, fixed_object_token_or_path, tokenizer, size,
-                 repeats=1, center_crop=False, split='train'):
+    def __init__(self, data_root, tokenizer, size, placeholder_object_token, fixed_object_token_or_path=None,
+                 clothing_type='dress', repeats=1, center_crop=False, split='train'):
         self.data_root = data_root
         self.img_data_root = os.path.join(self.data_root, 'images')
+        self.placeholder_object_token = placeholder_object_token
         self.fixed_object_token = fixed_object_token_or_path
         self.fixed_object_token_pretrained = False
-        self.placeholder_object_tokens = [self.fixed_object_token]
-        self.clothing_type = fixed_object_token_or_path
+        self.placeholder_new_tokens = None
+        self.clothing_type = fixed_object_token_or_path if fixed_object_token_or_path is not None else clothing_type
         assert self.clothing_type in {'dress', 'toptee', 'shirt'}, (
             f"Invalid clothing type '{self.clothing_type}'. "
         )
@@ -61,22 +62,23 @@ class FashionIQDataset(Dataset):
                     os.path.join(dataset_root, 'captions', 'cap.{}.{}.json'.format(clothing_type, split))) as json_file:
                 img_caption_data = json.load(json_file)
 
-            style_tokens = list()
+            new_tokens = list()
+            # 1. check if some captions include new tokens
             for item in img_caption_data:
                 captions = item['captions']
 
                 ref_caption = captions[0]
                 targ_caption = captions[1]
 
-                ref_style_tokens = self.get_style_tokens_per_caption(ref_caption)
-                targ_style_tokens = self.get_style_tokens_per_caption(targ_caption)
+                ref_new_tokens = self.get_new_tokens_per_caption(ref_caption)
+                targ_new_tokens = self.get_new_tokens_per_caption(targ_caption)
 
-                style_tokens.extend(ref_style_tokens)
-                style_tokens.extend(targ_style_tokens)
-                style_tokens = list(set(style_tokens))
-            self.placeholder_style_tokens = style_tokens
-            print(style_tokens)
-            print(len(style_tokens))
+                new_tokens.extend(ref_new_tokens)
+                new_tokens.extend(targ_new_tokens)
+                new_tokens = list(set(new_tokens))
+            # 2. add a placeholder object token
+            new_tokens.append(self.placeholder_object_token)
+            self.placeholder_new_tokens = new_tokens
             return img_caption_data
 
         self.img_caption_data = get_img_caption_json(data_root, self.clothing_type)
@@ -85,8 +87,9 @@ class FashionIQDataset(Dataset):
         safe_idx = idx // 2
         reverse = (idx % 2 == 1)
 
-        placeholder_object_token = self.placeholder_object_tokens[0]
-        assert len(self.placeholder_object_tokens) == 1
+        if self.placeholder_object_tokens is not None:
+            placeholder_object_token = self.placeholder_object_tokens[0]
+            assert len(self.placeholder_object_tokens) == 1
 
         ref_img_path, _ = _get_img_path_using_idx(self.img_caption_data, self.img_data_root, safe_idx, is_ref=True)
         targ_img_path, _ = _get_img_path_using_idx(self.img_caption_data, self.img_data_root, safe_idx, is_ref=False)
@@ -105,9 +108,9 @@ class FashionIQDataset(Dataset):
                     placeholder_object_token))
         else:
             img['input_ids_placeholder_object'] = torch.tensor(-1)
-        # img['input_ids_placeholder_style'] = torch.tensor(
-        #    self.tokenizer.convert_tokens_to_ids(img['ref_style_tokens']))
-        img['input_ids_placeholder_style'] = torch.tensor(-1)
+        # img['input_ids_placeholder_new'] = torch.tensor(
+        #    self.tokenizer.convert_tokens_to_ids(img['ref_new_tokens']))
+        img['input_ids_placeholder_new'] = torch.tensor(-1)
         img['input_ids'] = self.tokenizer(
             img['text'],
             padding='max_length',
@@ -141,7 +144,7 @@ class FashionIQDataset(Dataset):
 
         return image
 
-    def get_style_tokens_per_caption(self, text):
+    def get_new_tokens_per_caption(self, text):
         '''
         encoded = self.tokenizer(text, return_offsets_mapping=True, add_special_tokens=False)
         input_ids = encoded['input_ids']

@@ -2433,3 +2433,791 @@ Mixed precision type: no
 2025-02-12 16:58:14   Total train batch size (w. parallel, distributed & accumulation) = 8
 2025-02-12 16:58:14   Gradient Accumulation steps = 4
 2025-02-12 16:58:14   Total optimization steps = 1000
+2025-02-12 18:00:50 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_object_token: object
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_mlp_hidden_dims: 64
+  arch_style_disable_tl: true
+  arch_style_mix_streams: 0
+  arch_style_net: 14
+  bypass_unconstrained_object: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_object_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_object: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_object: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_object: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_object: 1
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:00:50 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+
+2025-02-12 18:01:42 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_object_token: object
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_mlp_hidden_dims: 64
+  arch_style_disable_tl: true
+  arch_style_mix_streams: 0
+  arch_style_net: 14
+  bypass_unconstrained_object: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_object_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_object: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_object: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_object: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_object: 1
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:01:42 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+
+2025-02-12 18:02:20 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_object_token: object
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_mlp_hidden_dims: 64
+  arch_style_disable_tl: true
+  arch_style_mix_streams: 0
+  arch_style_net: 14
+  bypass_unconstrained_object: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_object_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_object: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_object: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_object: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_object: 1
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:02:20 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+
+2025-02-12 18:03:52 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_object_token: object
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_mlp_hidden_dims: 64
+  arch_style_disable_tl: true
+  arch_style_mix_streams: 0
+  arch_style_net: 14
+  bypass_unconstrained_object: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_object_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_object: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_object: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_object: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_object: 1
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:03:52 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+
+2025-02-12 18:04:13 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_object_token: object
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_mlp_hidden_dims: 64
+  arch_style_disable_tl: true
+  arch_style_mix_streams: 0
+  arch_style_net: 14
+  bypass_unconstrained_object: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_object_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_object: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_object: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_object: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_object: 1
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:04:13 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+
+2025-02-12 18:07:22 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_object_token: object
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_mlp_hidden_dims: 64
+  arch_style_disable_tl: true
+  arch_style_mix_streams: 0
+  arch_style_net: 14
+  bypass_unconstrained_object: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_object_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_object: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_object: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_object: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_object: 1
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:07:22 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+
+2025-02-12 18:37:48 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_img_token: photo
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_imgT: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_img: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_img: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 0
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:37:48 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+
+2025-02-12 18:38:22 
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  fixed_object_token_or_path: null
+  learnable_property: object
+  placeholder_object_token: <img_unknown>
+  placeholder_object_tokens: null
+  repeats: 1
+  resolution: 512
+  super_category_img_token: photo
+  super_category_object_tokens: null
+  super_category_style_token: style
+  super_category_token: object
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_object_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+  validation_style_tokens:
+  - <style_rose>
+  - <style_v-neck>
+  - <style_velvet>
+  - <style_sleeveless>
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\style-inversion\fashion200k
+  exp_name: fashion200k
+  logging_dir: exp\style-inversion\fashion200k\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  bypass_unconstrained_style: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  normalize_style_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_alpha_style: 5.0
+  output_bypass_img: true
+  output_bypass_style: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  revision: null
+  target_norm_img: null
+  target_norm_style: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 0
+  use_positional_encoding_style: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
+
+2025-02-12 18:38:22 Distributed environment: NO
+Num processes: 1
+Process index: 0
+Local process index: 0
+Device: cuda
+
+Mixed precision type: no
+

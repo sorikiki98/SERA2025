@@ -16,7 +16,7 @@ class NeTIMapper(nn.Module):
 
     def __init__(
             self,
-            embedding_type: Literal['object', 'style'],
+            embedding_type: Literal['img'],
             output_dim: int = 768,
             token_embed_dim: int = 768,
             unet_layers: List[str] = UNET_LAYERS,
@@ -29,16 +29,14 @@ class NeTIMapper(nn.Module):
             pe_sigmas: PESigmas = PESigmas(sigma_t=0.03,
                                            sigma_l=2.0),
             output_bypass: bool = True,
-            placeholder_style_tokens: List[str] = None,
-            placeholder_style_token_ids: torch.Tensor = None,
-            arch_style_net: int = 0,
-            arch_style_mix_streams: int = 0,
-            arch_style_disable_tl: bool = True,
+            placeholder_new_tokens: List[str] = None,
+            placeholder_new_token_ids: torch.Tensor = None,
+            arch_new_disable_tl: bool = True,
             original_ti_init_embed=None,
             original_ti: bool = False,
             bypass_unconstrained: bool = True,
             output_bypass_alpha: float = 0.2,
-            placeholder_object_token: str = None,
+            placeholder_new_token: str = None,
     ):
         """
         Args:
@@ -55,18 +53,16 @@ class NeTIMapper(nn.Module):
         super().__init__()
         self.embedding_type = embedding_type
         self.token_embed_dim = token_embed_dim
-        self.arch_style_net = arch_style_net
         self.use_nested_dropout = use_nested_dropout
         self.nested_dropout_prob = nested_dropout_prob
         self.arch_mlp_hidden_dims = arch_mlp_hidden_dims
         self.norm_scale = norm_scale
         self.original_ti = original_ti
-        self.arch_style_disable_tl = arch_style_disable_tl
+        self.arch_new_disable_tl = arch_new_disable_tl
         self.original_ti_init_embed = original_ti_init_embed
         self.output_bypass_alpha = output_bypass_alpha
         self.num_unet_layers = len(unet_layers)
-        self.placeholder_object_token = placeholder_object_token  # does nothing
-        self.arch_style_mix_streams = arch_style_mix_streams
+        self.placeholder_new_token = placeholder_new_token  # does nothing
         self.bypass_unconstrained = bypass_unconstrained
 
         if original_ti and output_bypass:

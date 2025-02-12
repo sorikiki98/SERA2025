@@ -12,7 +12,7 @@ from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from diffusers.optimization import get_scheduler
 from torch.utils.data import Dataset
 from tqdm.auto import tqdm
-from transformers import CLIPTokenizer, CLIPTokenizerFast
+from transformers import CLIPTokenizer
 
 from checkpoint_handler import CheckpointHandler
 from constants import UNET_LAYERS
@@ -48,32 +48,28 @@ class Coach:
         self.train_dataloader = self._init_dataloader(dataset=self.train_dataset)
 
         # Initialize placeholder tokens
-        self.placeholder_style_tokens = self.train_dataset.placeholder_style_tokens
-        self.placeholder_object_tokens = self.train_dataset.placeholder_object_tokens
+        self.placeholder_new_tokens = self.train_dataset.placeholder_new_tokens
         self.fixed_object_token = self.train_dataset.fixed_object_token
         '''
-        if self.cfg.eval.validation_style_tokens is not None:
+        if self.cfg.eval.validation_new_tokens is not None:
             assert all([
-                v in self.placeholder_style_tokens
-                for v in self.cfg.eval.validation_style_tokens
+                v in self.placeholder_new_tokens
+                for v in self.cfg.eval.validation_new_tokens
             ])
         '''
 
         # add novel concepts
         self.load_pretrained_object_neti = True if self.cfg.data.fixed_object_token_or_path is not None and Path(
             self.cfg.data.fixed_object_token_or_path).suffix == '.pt' else False
-        (self.token_embeds, self.placeholder_token_ids, self.placeholder_style_token_ids,
-         self.placeholder_object_token_ids) = Coach._add_concept_token_to_tokenizer_static(
-            self.cfg, self.train_dataset.placeholder_style_tokens, self.train_dataset.placeholder_object_tokens,
-            self.tokenizer, self.text_encoder
+        (self.token_embeds, self.placeholder_new_token_ids) = Coach._add_concept_token_to_tokenizer_static(
+            self.cfg, self.train_dataset.placeholder_new_tokens, self.tokenizer, self.text_encoder
         )
 
-
-        self.cfg.data.placeholder_style_tokens = self.placeholder_style_tokens
+        self.cfg.data.placeholder_new_tokens = self.placeholder_new_tokens
 
         # Initialize mapper and set mapper
-        neti_mapper_object_lookup, neti_mapper_style, self.loaded_iteration = self._init_neti_mapper()
-        self.text_encoder.text_model.embeddings.set_mapper(neti_mapper_object_lookup, neti_mapper_style)
+        neti_mapper_object_lookup, neti_mapper_new, self.loaded_iteration = self._init_neti_mapper()
+        self.text_encoder.text_model.embeddings.set_mapper(neti_mapper_object_lookup, neti_mapper_new)
         self._freeze_all_modules()
         self._set_attn_processor()
 
@@ -92,18 +88,14 @@ class Coach:
         self._init_trackers()
 
         self.validator = ValidationHandler(cfg=self.cfg,
-                                           placeholder_style_tokens=self.placeholder_style_tokens,
-                                           placeholder_style_token_ids=self.placeholder_style_token_ids,
-                                           placeholder_object_tokens=self.placeholder_object_tokens,
-                                           placeholder_object_token_ids=self.placeholder_object_token_ids,
+                                           placeholder_new_tokens=self.placeholder_new_tokens,
+                                           placeholder_new_token_ids=self.placeholder_new_token_ids,
                                            fixed_object_token=self.fixed_object_token,
                                            weights_dtype=self.weight_dtype)
 
         self.checkpoint_handler = CheckpointHandler(cfg=self.cfg,
-                                                    placeholder_style_tokens=self.placeholder_style_tokens,
-                                                    placeholder_style_token_ids=self.placeholder_style_token_ids,
-                                                    placeholder_object_tokens=self.placeholder_object_tokens,
-                                                    placeholder_object_token_ids=self.placeholder_object_token_ids,
+                                                    placeholder_new_tokens=self.placeholder_new_tokens,
+                                                    placeholder_new_token_ids=self.placeholder_new_token_ids,
                                                     save_root=self.cfg.log.exp_dir)
 
         #### tmp - for testing if the loaded object token works ####
@@ -154,8 +146,8 @@ class Coach:
                     _hs = self.get_text_conditioning(input_ids=batch['input_ids'],
                                                      input_ids_placeholder_object=batch[
                                                          'input_ids_placeholder_object'],
-                                                     input_ids_placeholder_style=batch[
-                                                         'input_ids_placeholder_style'],
+                                                     input_ids_placeholder_new=batch[
+                                                         'input_ids_placeholder_new'],
                                                      timesteps=timesteps,
                                                      device=latents.device)
 
@@ -179,7 +171,7 @@ class Coach:
 
                     # Let's make sure we don't update any embedding weights besides the newly added token
                     # This isn't really needed, but we'll keep it for consistency with the original code
-                    index_no_updates = torch.arange(len(self.tokenizer)) != self.placeholder_token_ids
+                    index_no_updates = torch.arange(len(self.tokenizer)) != self.placeholder_new_token_ids
                     with torch.no_grad():
                         self.accelerator.unwrap_model(self.text_encoder).get_input_embeddings().weight[
                             index_no_updates] = orig_embeds_params[index_no_updates]
@@ -224,7 +216,7 @@ class Coach:
 
     def get_text_conditioning(self, input_ids: torch.Tensor,
                               input_ids_placeholder_object: List[int],
-                              input_ids_placeholder_style: List[int],
+                              input_ids_placeholder_new: List[int],
                               timesteps: torch.Tensor,
                               device: torch.device) -> Dict:
         """ Compute the text conditioning for the current batch of images using our text encoder over-ride. """
@@ -233,7 +225,7 @@ class Coach:
             neti_batch = NeTIBatch(
                 input_ids=input_ids,
                 input_ids_placeholder_object=input_ids_placeholder_object,
-                input_ids_placeholder_style=input_ids_placeholder_style,
+                input_ids_placeholder_new=input_ids_placeholder_new,
                 timesteps=timesteps,
                 unet_layers=torch.tensor(layer_idx, device=device).repeat(timesteps.shape[0])
             )
@@ -254,51 +246,34 @@ class Coach:
         return global_step
 
     @staticmethod
-    def _add_concept_token_to_tokenizer_static(cfg, placeholder_style_tokens,
-                                               placeholder_object_tokens, tokenizer, text_encoder
+    def _add_concept_token_to_tokenizer_static(cfg, placeholder_new_tokens, tokenizer, text_encoder
                                                ):
         """ modifies the tokenizer and text_encoder in place """
-        placeholder_tokens = placeholder_style_tokens + placeholder_object_tokens
-        num_added_tokens = tokenizer.add_tokens(placeholder_tokens)
-        '''
+        num_added_tokens = tokenizer.add_tokens(placeholder_new_tokens)
         if num_added_tokens == 0:
             raise ValueError(
                 f"No new tokens were added to the tokenizer"
                 f"Please pass a different `placeholder_token` that is not already in the tokenizer."
             )
-        '''
 
         # extract all the placeholder ids
-        placeholder_style_token_ids = tokenizer.convert_tokens_to_ids(
-            placeholder_style_tokens)
-
-        placeholder_object_token_ids = tokenizer.convert_tokens_to_ids(
-            placeholder_object_tokens)
-        placeholder_token_ids = tokenizer.convert_tokens_to_ids(
-            placeholder_tokens)
-        assert set(placeholder_style_token_ids).union(
-            set(placeholder_object_token_ids)) == set(placeholder_token_ids)
+        placeholder_new_token_ids = tokenizer.convert_tokens_to_ids(
+            placeholder_new_tokens)
 
         # Convert the super_category_token, placeholder_token to ids
-        super_category_object_token_id = tokenizer.encode(
-            cfg.data.super_category_object_token,
+        super_category_img_token_id = tokenizer.encode(
+            cfg.data.super_category_img_token,
             add_special_tokens=False)
-        super_category_style_token_id = tokenizer.encode(
-            cfg.data.super_category_style_token, add_special_tokens=False)
 
-        super_token_ids = super_category_object_token_id + super_category_style_token_id
+        super_token_ids = super_category_img_token_id
 
         # Check if super_category_token is a single token or a sequence of tokens
-        if len(super_category_object_token_id) != 1:
+        if len(super_category_img_token_id) != 1:
             raise ValueError(
                 f"object supercategory [self.cfg.data.super_category_object_token] not in the vocabulary"
             )
-        if len(super_category_style_token_id) != 1:
-            raise ValueError(
-                "view supercategory [self.cfg.data.super_category_view_token] not in the vocabulary"
-            )
-        super_category_object_token_id, super_category_style_token_id = super_category_object_token_id[
-            0], super_category_style_token_id[0]
+
+        super_category_img_token_id = super_category_img_token_id[0]
 
         # Resize the token embeddings as we are adding new special tokens to the tokenizer
         text_encoder.resize_token_embeddings(len(tokenizer))
@@ -306,37 +281,28 @@ class Coach:
         # Initialize the newly added placeholder token with the embeddings of the super category token
         token_embeds = text_encoder.get_input_embeddings().weight.data
         '''
-        token_embeds[placeholder_style_token_ids] = token_embeds[
-            super_category_style_token_id].clone().unsqueeze(0).repeat(
-            len(placeholder_style_token_ids), 1)
+        token_embeds[placeholder_new_token_ids] = token_embeds[
+            super_category_new_token_id].clone().unsqueeze(0).repeat(
+            len(placeholder_new_token_ids), 1)
         token_embeds[placeholder_object_token_ids] = token_embeds[
             super_category_object_token_id].clone().unsqueeze(0).repeat(
             len(placeholder_object_token_ids), 1)
         '''
 
         ## Compute the norm of the super category token embedding for scaling mapper output
-        cfg.model.target_norm_style = None
-        cfg.model.target_norm_object = None
+        cfg.model.target_norm_img = None
 
-        if cfg.model.normalize_style_mapper_output:
-            if super_category_style_token_id == tokenizer.unk_token_id:
+        if cfg.model.normalize_img_mapper_output:
+            if super_category_img_token_id == tokenizer.unk_token_id:
                 raise ValueError(
-                    f"super_category_style_token [{cfg.data.super_category_object_token}] ",
+                    f"super_category_new_token [{cfg.data.super_category_object_token}] ",
                     " is unknown to the tokenizer")
-            cfg.model.target_norm_style = token_embeds[
-                super_category_style_token_id].norm().item()
-        if cfg.model.normalize_object_mapper_output:
-            if super_category_object_token_id == tokenizer.unk_token_id:
-                raise ValueError(
-                    f"super_category_style_token [{super_category_object_token_id}] ",
-                    " is unknown to the tokenizer")
-            cfg.model.target_norm_object = token_embeds[
-                super_category_object_token_id].norm().item()
+            cfg.model.target_norm_img = token_embeds[
+                super_category_img_token_id].norm().item()
 
-        return token_embeds, placeholder_token_ids, placeholder_style_token_ids, placeholder_object_token_ids
+        return token_embeds, placeholder_new_token_ids
 
     def _init_neti_mapper(self) -> Tuple[NeTIMapper, Optional[int]]:
-        neti_mapper_object_lookup, neti_mapper_style = None, None
         loaded_iteration = None
 
         if self.cfg.model.mapper_checkpoint_path:
@@ -351,34 +317,32 @@ class Coach:
                 self.tokenizer)
 
         # hack
-        super_category_style_token = self.cfg.data.super_category_style_token
+        super_category_new_token = self.cfg.data.super_category_img_token
         original_ti_init_embed = self.text_encoder.get_input_embeddings().weight.data[
-            self.tokenizer.convert_tokens_to_ids(super_category_style_token)]
+            self.tokenizer.convert_tokens_to_ids(super_category_new_token)]
 
-        neti_mapper_style = NeTIMapper(
-            embedding_type="style",
-            placeholder_style_tokens=self.placeholder_style_tokens,
-            placeholder_style_token_ids=self.placeholder_style_token_ids,
-            placeholder_object_token=None,
+        neti_mapper_img = NeTIMapper(
+            embedding_type="img",
+            placeholder_new_tokens=self.placeholder_new_tokens,
+            placeholder_new_token_ids=self.placeholder_new_token_ids,
+            placeholder_new_token=None,
             output_dim=self.cfg.model.word_embedding_dim,
             arch_mlp_hidden_dims=self.cfg.model.arch_mlp_hidden_dims,
             use_nested_dropout=self.cfg.model.use_nested_dropout,
             nested_dropout_prob=self.cfg.model.nested_dropout_prob,
-            norm_scale=self.cfg.model.target_norm_style,
+            norm_scale=self.cfg.model.target_norm_img,
             use_positional_encoding=self.cfg.model.
-            use_positional_encoding_style,
+            use_positional_encoding_img,
             num_pe_time_anchors=self.cfg.model.num_pe_time_anchors,
             pe_sigmas=self.cfg.model.pe_sigmas,
-            arch_style_net=self.cfg.model.arch_style_net,
-            arch_style_mix_streams=self.cfg.model.arch_style_mix_streams,
-            arch_style_disable_tl=self.cfg.model.arch_style_disable_tl,
-            output_bypass=self.cfg.model.output_bypass_style,
+            arch_new_disable_tl=self.cfg.model.arch_img_disable_tl,
+            output_bypass=self.cfg.model.output_bypass_img,
             original_ti=self.cfg.model.original_ti,
             original_ti_init_embed=original_ti_init_embed,
-            output_bypass_alpha=self.cfg.model.output_bypass_alpha_style,
-            bypass_unconstrained=self.cfg.model.bypass_unconstrained_style)
+            output_bypass_alpha=self.cfg.model.output_bypass_alpha_img,
+            bypass_unconstrained=self.cfg.model.bypass_unconstrained_img)
 
-        return neti_mapper_object_lookup, neti_mapper_style, loaded_iteration
+        return neti_mapper_img, loaded_iteration
 
     def _init_sd_models(self):
         tokenizer = self._init_tokenizer()
@@ -426,8 +390,8 @@ class Coach:
         self.text_encoder.text_model.final_layer_norm.requires_grad_(False)
         self.text_encoder.text_model.embeddings.position_embedding.requires_grad_(False)
         # Make sure to train the mapper
-        self.text_encoder.text_model.embeddings.mapper_style.requires_grad_(True)
-        self.text_encoder.text_model.embeddings.mapper_style.train()
+        self.text_encoder.text_model.embeddings.mapper_new.requires_grad_(True)
+        self.text_encoder.text_model.embeddings.mapper_new.train()
         if self.cfg.optim.gradient_checkpointing:
             # Keep unet in train mode if we are using gradient checkpointing to save memory.
             # The dropout cannot be != 0 so it doesn't matter if we are in eval or train mode.
@@ -451,6 +415,7 @@ class Coach:
             )
         elif self.cfg.data.dataset == "fashion_iq":
             dataset = FashionIQDataset(
+                placeholder_object_token=self.cfg.data.placeholder_object_token,
                 fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
                 data_root=self.cfg.data.train_data_dir,
                 tokenizer=self.tokenizer,
@@ -477,7 +442,7 @@ class Coach:
                                             self.cfg.optim.train_batch_size *
                                             self.accelerator.num_processes)
         optimizer = torch.optim.AdamW(
-            self.text_encoder.text_model.embeddings.mapper_style.parameters(),  # only optimize the embeddings
+            self.text_encoder.text_model.embeddings.mapper_new.parameters(),  # only optimize the embeddings
             lr=self.cfg.optim.learning_rate,
             betas=(self.cfg.optim.adam_beta1, self.cfg.optim.adam_beta2),
             weight_decay=self.cfg.optim.adam_weight_decay,
