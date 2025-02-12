@@ -98,11 +98,15 @@ class ValidationHandler:
                 for v in style_tokens
             ]
         else:
-            prompts = prompts
-
-        joined_images = []
+            formatted_prompts = []
+            for prompt in prompts:
+                formatted_prompt = prompt.format(self.fixed_object_token)
+                formatted_prompts.append(formatted_prompt)
+            prompts = formatted_prompts
 
         print(prompts)
+        joined_images = []
+
         for prompt in prompts:
             images = self.infer_on_prompt(
                 pipeline=pipeline,

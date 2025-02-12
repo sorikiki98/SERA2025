@@ -28,6 +28,7 @@ class LogConfig:
 @dataclass
 class DataConfig:
     """ Parameters for data """
+    dataset: str
     # A folder containing the training data
     train_data_dir: str
     # A token to use as a placeholder for the concept

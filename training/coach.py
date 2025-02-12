@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Tuple, List, Union
 
 import diffusers
 import torch
@@ -12,7 +12,7 @@ from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from diffusers.optimization import get_scheduler
 from torch.utils.data import Dataset
 from tqdm.auto import tqdm
-from transformers import CLIPTokenizer
+from transformers import CLIPTokenizer, CLIPTokenizerFast
 
 from checkpoint_handler import CheckpointHandler
 from constants import UNET_LAYERS
@@ -20,7 +20,8 @@ from models.neti_clip_text_encoder import NeTICLIPTextModel
 from models.neti_mapper import NeTIMapper
 from models.xti_attention_processor import XTIAttenProc
 from training.config import RunConfig
-from data.fashion200k import Fashion200K
+from data.fashion200k import Fashion200KDataset
+from data.fashion_iq import FashionIQDataset
 from training.logger import CoachLogger
 from training.validate import ValidationHandler
 from utils.types import NeTIBatch
@@ -48,15 +49,15 @@ class Coach:
 
         # Initialize placeholder tokens
         self.placeholder_style_tokens = self.train_dataset.placeholder_style_tokens
-        print(self.placeholder_style_tokens)
-        print(len(self.placeholder_style_tokens))
         self.placeholder_object_tokens = self.train_dataset.placeholder_object_tokens
         self.fixed_object_token = self.train_dataset.fixed_object_token
+        '''
         if self.cfg.eval.validation_style_tokens is not None:
             assert all([
                 v in self.placeholder_style_tokens
                 for v in self.cfg.eval.validation_style_tokens
             ])
+        '''
 
         # add novel concepts
         self.load_pretrained_object_neti = True if self.cfg.data.fixed_object_token_or_path is not None and Path(
@@ -66,6 +67,7 @@ class Coach:
             self.cfg, self.train_dataset.placeholder_style_tokens, self.train_dataset.placeholder_object_tokens,
             self.tokenizer, self.text_encoder
         )
+
 
         self.cfg.data.placeholder_style_tokens = self.placeholder_style_tokens
 
@@ -201,6 +203,7 @@ class Coach:
                                              vae=self.vae,
                                              num_images_per_prompt=self.cfg.eval.num_validation_images,
                                              seeds=self.cfg.eval.validation_seeds,
+                                             prompts=self.cfg.eval.validation_prompts,
                                              step=global_step)
 
                 logs = {"total_loss": loss.detach().item(), "lr": self.lr_scheduler.get_last_lr()[0]}
@@ -257,11 +260,13 @@ class Coach:
         """ modifies the tokenizer and text_encoder in place """
         placeholder_tokens = placeholder_style_tokens + placeholder_object_tokens
         num_added_tokens = tokenizer.add_tokens(placeholder_tokens)
+        '''
         if num_added_tokens == 0:
             raise ValueError(
                 f"No new tokens were added to the tokenizer"
                 f"Please pass a different `placeholder_token` that is not already in the tokenizer."
             )
+        '''
 
         # extract all the placeholder ids
         placeholder_style_token_ids = tokenizer.convert_tokens_to_ids(
@@ -433,14 +438,29 @@ class Coach:
     def _set_attn_processor(self):
         self.unet.set_attn_processor(XTIAttenProc())
 
-    def _init_dataset(self) -> Fashion200K:
-        dataset = Fashion200K(fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
-                              data_root=self.cfg.data.train_data_dir,
-                              tokenizer=self.tokenizer,
-                              size=self.cfg.data.resolution,
-                              repeats=self.cfg.data.repeats,
-                              center_crop=self.cfg.data.center_crop,
-                              set="train")
+    def _init_dataset(self) -> Union[Fashion200KDataset, FashionIQDataset]:
+        if self.cfg.data.dataset == "fashion200k":
+            dataset = Fashion200KDataset(
+                fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
+                data_root=self.cfg.data.train_data_dir,
+                tokenizer=self.tokenizer,
+                size=self.cfg.data.resolution,
+                repeats=self.cfg.data.repeats,
+                center_crop=self.cfg.data.center_crop,
+                set="train"
+            )
+        elif self.cfg.data.dataset == "fashion_iq":
+            dataset = FashionIQDataset(
+                fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
+                data_root=self.cfg.data.train_data_dir,
+                tokenizer=self.tokenizer,
+                size=self.cfg.data.resolution,
+                repeats=self.cfg.data.repeats,
+                center_crop=self.cfg.data.center_crop,
+                split="train"
+            )
+        else:
+            raise ValueError(f"Unknown dataset type!")
         return dataset
 
     def _init_dataloader(self, dataset: Dataset) -> torch.utils.data.DataLoader:

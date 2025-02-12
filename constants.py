@@ -24,10 +24,10 @@ PROMPTS = [
 ]
 
 VALIDATION_PROMPTS = [
-    "A {} black dress with elegant details.",
-    "A {} black dress perfect for evening wear.",
-    "A {} black dress with a minimalist design.",
-    "A {} black dress that flows gracefully.",
+    "A {} has a no v-neck and has two colors.",
+    "A {} without a red belt and is more orange and is shorter",
+    "A {} is not cream with long sleeves and is white and more casual.",
+    "A {} is not green with short sleeves and is darker ion color.",
 ]
 
 IMAGENET_TEMPLATES_SMALL = [

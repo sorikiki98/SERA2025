@@ -3,9 +3,10 @@ log:
   exp_dir: exp/style-inversion
   save_steps: 10
 data:
-  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion200k\\
+  dataset: fashion_iq
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
   placeholder_object_token: <object>
-  fixed_object_token_or_path: black dress
+  fixed_object_token_or_path: dress
   super_category_object_token: object
   super_category_style_token: style
   dataloader_num_workers: 8
@@ -28,9 +29,9 @@ model:
   output_bypass_alpha_style: 5
   output_bypass_alpha_object: 5
 eval:
-  validation_steps: 10
+  validation_steps: 1
   num_denoising_steps: 50
-  validation_seeds: [ 0, 1, 2 ]
+  validation_seeds: [ 3, 4, 5 ]
   num_validation_images: 3
   validation_style_tokens: [<style_rose>, <style_v-neck>, <style_velvet>, <style_sleeveless>]
   eval_placeholder_object_tokens: [ <skull>, <statue>, <statue2>, <toy> ]

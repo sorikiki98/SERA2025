@@ -31,7 +31,7 @@ else:
     }
 
 
-class Fashion200K(Dataset):
+class Fashion200KDataset(Dataset):
 
     def __init__(self, data_root: str,
                  tokenizer: CLIPTokenizer,
