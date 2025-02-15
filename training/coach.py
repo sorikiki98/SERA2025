@@ -13,6 +13,7 @@ from diffusers.optimization import get_scheduler
 from torch.utils.data import Dataset
 from tqdm.auto import tqdm
 from transformers import CLIPTokenizer
+from transformers.models.clip.modeling_clip import CLIPVisionModel
 
 from checkpoint_handler import CheckpointHandler
 from constants import UNET_LAYERS
@@ -41,7 +42,7 @@ class Coach:
             torch.backends.cuda.matmul.allow_tf32 = True
 
         # Initialize models
-        self.tokenizer, self.noise_scheduler, self.text_encoder, self.vae, self.unet = self._init_sd_models()
+        self.tokenizer, self.noise_scheduler, self.text_encoder, self.image_encoder, self.vae, self.unet = self._init_sd_models()
 
         # Initialize dataset and dataloader
         self.train_dataset = self._init_dataset()
@@ -348,36 +349,44 @@ class Coach:
         tokenizer = self._init_tokenizer()
         noise_scheduler = self._init_noise_scheduler()
         text_encoder = self._init_text_encoder()
+        image_encoder = self._init_image_encoder()
         vae = self._init_vae()
         unet = self._init_unet()
-        return tokenizer, noise_scheduler, text_encoder, vae, unet
+        return tokenizer, noise_scheduler, text_encoder, image_encoder, vae, unet
 
     def _init_tokenizer(self) -> CLIPTokenizer:
         tokenizer = CLIPTokenizer.from_pretrained(
-            self.cfg.model.pretrained_model_name_or_path, subfolder="tokenizer"
+            self.cfg.model.pretrained_diffusion_model_name_or_path, subfolder="tokenizer"
         )
         return tokenizer
 
     def _init_noise_scheduler(self) -> DDPMScheduler:
         noise_scheduler = DDPMScheduler.from_pretrained(
-            self.cfg.model.pretrained_model_name_or_path, subfolder="scheduler"
+            self.cfg.model.pretrained_diffusion_model_name_or_path, subfolder="scheduler"
         )
         return noise_scheduler
 
+    def _init_image_encoder(self) -> CLIPVisionModel:
+        image_encoder = CLIPVisionModel.from_pretrained(
+            self.cfg.model.pretrained_image_model_name_or_path
+        )
+        return image_encoder
+
     def _init_text_encoder(self) -> NeTICLIPTextModel:
         text_encoder = NeTICLIPTextModel.from_pretrained(
-            self.cfg.model.pretrained_model_name_or_path, subfolder="text_encoder", revision=self.cfg.model.revision,
+            self.cfg.model.pretrained_diffusion_model_name_or_path, subfolder="text_encoder",
+            revision=self.cfg.model.revision,
         )
         return text_encoder
 
     def _init_vae(self) -> AutoencoderKL:
         vae = AutoencoderKL.from_pretrained(
-            self.cfg.model.pretrained_model_name_or_path, subfolder="vae", revision=self.cfg.model.revision)
+            self.cfg.model.pretrained_diffusion_model_name_or_path, subfolder="vae", revision=self.cfg.model.revision)
         return vae
 
     def _init_unet(self) -> UNet2DConditionModel:
         unet = UNet2DConditionModel.from_pretrained(
-            self.cfg.model.pretrained_model_name_or_path, subfolder="unet", revision=self.cfg.model.revision
+            self.cfg.model.pretrained_diffusion_model_name_or_path, subfolder="unet", revision=self.cfg.model.revision
         )
         return unet
 
@@ -419,6 +428,7 @@ class Coach:
                 fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
                 data_root=self.cfg.data.train_data_dir,
                 tokenizer=self.tokenizer,
+                image_encoder=self.image_encoder,
                 size=self.cfg.data.resolution,
                 repeats=self.cfg.data.repeats,
                 center_crop=self.cfg.data.center_crop,

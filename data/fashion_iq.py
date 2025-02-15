@@ -38,8 +38,18 @@ def _get_img_path_using_idx(img_caption_data, img_root, idx, is_ref=True):
     return img, id
 
 
+def _normalize_image(img_tensor):
+    mean = torch.tensor([0.48145466, 0.4578275, 0.40821073]).view(1, 3, 1, 1).to(img_tensor.device)
+    std = torch.tensor([0.26862954, 0.26130258, 0.27577711]).view(1, 3, 1, 1).to(img_tensor.device)
+
+    image_normalized = (img_tensor - mean) / std
+
+    return image_normalized
+
+
 class FashionIQDataset(Dataset):
-    def __init__(self, data_root, tokenizer, size, placeholder_object_token, fixed_object_token_or_path=None,
+    def __init__(self, data_root, tokenizer, image_encoder, size, placeholder_object_token,
+                 fixed_object_token_or_path=None,
                  clothing_type='dress', repeats=1, center_crop=False, split='train'):
         self.data_root = data_root
         self.img_data_root = os.path.join(self.data_root, 'images')
@@ -47,11 +57,13 @@ class FashionIQDataset(Dataset):
         self.fixed_object_token = fixed_object_token_or_path
         self.fixed_object_token_pretrained = False
         self.placeholder_new_tokens = None
+        self.placeholder_object_tokens = None
         self.clothing_type = fixed_object_token_or_path if fixed_object_token_or_path is not None else clothing_type
         assert self.clothing_type in {'dress', 'toptee', 'shirt'}, (
             f"Invalid clothing type '{self.clothing_type}'. "
         )
         self.tokenizer = tokenizer
+        self.image_encoder = image_encoder
         self.size = size
         self.repeats = repeats
         self.center_crop = center_crop
@@ -101,6 +113,12 @@ class FashionIQDataset(Dataset):
         img = dict()
         img['pixel_values'] = ref_img_pixel_values
         img['text'] = ref_text
+
+        with torch.no_grad():
+            image_embedding = self.image_encoder.encode_image(ref_img_pixel_values)
+        image_embedding /= image_embedding.norm(dim=-1, keepdim=True)
+
+        img['image_embeds'] = image_embedding
 
         if self.fixed_object_token_pretrained:
             img['input_ids_placeholder_object'] = torch.tensor(

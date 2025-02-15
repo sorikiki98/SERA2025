@@ -1,38 +1,32 @@
 log:
-  exp_name: fashion200k
-  exp_dir: exp/style-inversion
+  exp_name: fashion_iq
+  exp_dir: exp/image-inversion
   save_steps: 10
 data:
   dataset: fashion_iq
   train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
-  placeholder_object_token: <img_unknown>
-  # fixed_object_token_or_path: dress
+  placeholder_img_token: <img_unknown>
   super_category_img_token: photo
-  super_category_style_token: style
   dataloader_num_workers: 8
 model:
-  pretrained_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-base-patch16
   use_nested_dropout: True
   nested_dropout_prob: 0.5
   arch_mlp_hidden_dims: 64
   normalize_img_mapper_output: True
-  normalize_style_mapper_output: True
   use_positional_encoding_img: False
-  use_positional_encoding_style: True
   pe_sigmas: { 'sigma_t': 0.03, 'sigma_l': 2.0 }
   num_pe_time_anchors: 10
   output_bypass_img: True
-  output_bypass_style: True
   arch_img_disable_tl: bool = True
-  output_bypass_alpha_style: 5
   output_bypass_alpha_img: 5
 eval:
   validation_steps: 1
   num_denoising_steps: 50
   validation_seeds: [ 3, 4, 5 ]
   num_validation_images: 3
-  validation_style_tokens: [<style_rose>, <style_v-neck>, <style_velvet>, <style_sleeveless>]
-  eval_placeholder_object_tokens: [ <skull>, <statue>, <statue2>, <toy> ]
+  eval_placeholder_img_tokens: [ <skull>, <statue>, <statue2>, <toy> ]
 optim:
   max_train_steps: 1000
   learning_rate: 1e-3

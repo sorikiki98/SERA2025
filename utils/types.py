@@ -9,7 +9,7 @@ import torch
 class NeTIBatch:
     input_ids: torch.Tensor
     input_ids_placeholder_object: torch.Tensor
-    input_ids_placeholder_style: torch.Tensor
+    input_ids_placeholder_new: torch.Tensor
     timesteps: torch.Tensor
     unet_layers: torch.Tensor
     truncation_idx: Optional[int] = None

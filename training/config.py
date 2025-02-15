@@ -32,27 +32,15 @@ class DataConfig:
     # A folder containing the training data
     train_data_dir: str
     # A token to use as a placeholder for the concept
-    placeholder_object_token: str = "<>"
-    # some list versions of these things for learnable mode 3
-    placeholder_object_tokens: List[str] = None
+    placeholder_img_token: str = "<img_unknown>"
     # Super category token to use for normalizing the mapper output
     super_category_img_token: Optional[str] = "photo"
-    super_category_style_token: Optional[str] = "style"
-    super_category_object_tokens: Optional[List[str]] = None
-    # if learnable_mode==1 (learning views only), object token. Either a string or path to a NeTI mapper.
-    fixed_object_token_or_path: Union[str, Path] = None
-    # this is a placeholder that will be filled at runtime
-    placeholder_new_tokens = None
-    # Super category token to use for normalizing the mapper output
-    super_category_token: Optional[str] = "object"
     # Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process
     dataloader_num_workers: int = 8
-    # Choose between 'object' and 'style' - used for selecting the prompts for training
-    learnable_property: str = "object"
     # How many times to repeat the training data
     repeats: int = 1
     # The resolution for input images, all the images in the train/validation dataset will be resized to this resolution
-    resolution: int = 512
+    resolution: int = 224
     # Whether to center crop images before resizing to resolution
     center_crop: bool = False
 
@@ -61,7 +49,8 @@ class DataConfig:
 class ModelConfig:
     """ Parameters for defining all models """
     # Path to pretrained model or model identifier from huggingface.co/models
-    pretrained_model_name_or_path: str = "CompVis/stable-diffusion-v1-4"
+    pretrained_diffusion_model_name_or_path: str = "CompVis/stable-diffusion-v1-4"
+    pretrained_image_model_name_or_path: str = "openai/clip-vit-base-patch16"
     # dimension of word embedding. Is 768 if sd1 and 1024 if sd2
     word_embedding_dim: int = 768
     # dimension of hidden layers in the MLP
@@ -72,21 +61,17 @@ class ModelConfig:
     nested_dropout_prob: float = 0.5
     # Whether to normalize the norm of the mapper's output vector
     normalize_img_mapper_output: bool = True
-    normalize_style_mapper_output: bool = False
     # Target norm for the mapper's output vector
     target_norm_img: float = None
-    target_norm_style: float = None
     # Pos encoding for (t,l) conditioning. 0 - scale to [-1,1], 1 - pos encoding
     # proposed by Neti. 2 - standard Fourier feature pos encoding.
     use_positional_encoding_img: int = 0
-    use_positional_encoding_style: int = 1
     # Sigmas used for computing positional encoding
     pe_sigmas: Dict[str, float] = field(default_factory=lambda: {'sigma_t': 0.03, 'sigma_l': 2.0})
     # Number of time anchors for computing our positional encodings
     num_pe_time_anchors: int = 10
     # Whether to output the textual bypass vector
     output_bypass_img: bool = True
-    output_bypass_style: bool = True
     # Revision of pretrained model identifier from huggingface.co/models
     revision: Optional[str] = None
     # Whether training should be resumed from a previous checkpoint.
@@ -97,9 +82,7 @@ class ModelConfig:
     original_ti: bool = False
     # free movement in the bypass space
     bypass_unconstrained_img: bool = False
-    bypass_unconstrained_style: bool = False
     # size of alpha hyperparameter for the output bypass
-    output_bypass_alpha_style: float = 0.2
     output_bypass_alpha_img: float = 0.2
 
     def __post_init__(self):
@@ -114,8 +97,6 @@ class EvalConfig:
     # Prompts for validation (only for learnable_mode=0)
     validation_prompts: List[str] = field(
         default_factory=lambda: VALIDATION_PROMPTS)
-    # Prompts for valiation (only for learnable_mode>0)
-    validation_style_tokens: List[str] = None
     # Number of images that should be generated during validation with `validation_prompt`
     num_validation_images: int = 3
     # Seeds to use for generating the validation images
@@ -126,7 +107,7 @@ class EvalConfig:
     # Number of denoising steps
     num_denoising_steps: int = 50
     # for learnable_mode==3, which of the `placholder_object_tokens` to include in validation
-    eval_placeholder_object_tokens: List[str] = None
+    eval_placeholder_img_tokens: List[str] = None
 
     def __post_init__(self):
         if self.validation_seeds is None:
@@ -139,7 +120,7 @@ class EvalConfig:
 class OptimConfig:
     """ Parameters for the optimization process """
     # Total number of training steps to perform.
-    max_train_steps: Optional[int] = 1_000
+    max_train_steps: Optional[int] = 1000
     # Learning rate
     learning_rate: float = 1e-3
     # Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size

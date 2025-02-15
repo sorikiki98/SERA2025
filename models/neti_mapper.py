@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 import numpy as np
+from transformers import CLIPVisionModel
 
 from constants import UNET_LAYERS
 from models.positional_encoding import NeTIPositionalEncoding, BasicEncoder
@@ -75,50 +76,49 @@ class NeTIMapper(nn.Module):
 
         # for view mappers, prepare some class properties for the view tokens
         if self.embedding_type == "style":
+            '''
             self.placeholder_style_tokens = placeholder_style_tokens
             self.placeholder_style_token_ids = placeholder_style_token_ids
             self._prepare_style_token_param_lookup()
+            '''
 
         # set up positional encoding. For older experiments (arch_view_net<14),
         # use the legacy (t,l) conditioning. For later exps, call func for setup
         self.pe_sigmas = pe_sigmas
-        if self.arch_style_net <= 14:
-            self.use_positional_encoding = use_positional_encoding
-            if type(self.use_positional_encoding) is bool:
-                self.use_positional_encoding = int(
-                    self.use_positional_encoding)
-            if self.use_positional_encoding == 1:
-                self.encoder = NeTIPositionalEncoding(
-                    sigma_t=pe_sigmas.sigma_t,
-                    sigma_l=pe_sigmas.sigma_l).cuda()
-                self.input_dim = num_pe_time_anchors * len(unet_layers)
-            elif self.use_positional_encoding == 0:
-                self.encoder = BasicEncoder().cuda()
-                self.input_dim = 2
-            elif self.use_positional_encoding == 2:
-                raise NotImplementedError()
-            else:
-                raise ValueError()
-
-            self.input_layer = self.set_input_layer(len(unet_layers),
-                                                    num_pe_time_anchors)
+        self.use_positional_encoding = use_positional_encoding
+        if type(self.use_positional_encoding) is bool:
+            self.use_positional_encoding = int(
+                self.use_positional_encoding)
+        if self.use_positional_encoding == 1:
+            self.encoder = NeTIPositionalEncoding(
+                sigma_t=pe_sigmas.sigma_t,
+                sigma_l=pe_sigmas.sigma_l).cuda()
+            self.input_dim = num_pe_time_anchors * len(unet_layers)
+        elif self.use_positional_encoding == 0:
+            self.encoder = BasicEncoder().cuda()
+            self.input_dim = 2
+        elif self.use_positional_encoding == 2:
+            raise NotImplementedError()
         else:
-            self._set_positional_encoding()
+            raise ValueError()
+
+        self.input_layer = self.set_input_layer(len(unet_layers),
+                                                num_pe_time_anchors)
 
         # define architecture
-        if self.embedding_type == "object":
-            self.set_net_object(num_unet_layers=len(unet_layers),
-                                num_time_anchors=num_pe_time_anchors,
-                                output_dim=output_dim)
+        if self.embedding_type == "img":
+            self.set_net_image(num_unet_layers=len(unet_layers),
+                               num_time_anchors=num_pe_time_anchors,
+                               output_dim=output_dim)
         elif self.embedding_type == "style":
             self.set_net_style(num_unet_layers=len(unet_layers),
                                num_time_anchors=num_pe_time_anchors,
                                output_dim=output_dim)
 
-    def set_net_object(self,
-                       num_unet_layers: int,
-                       num_time_anchors: int,
-                       output_dim: int = 768):
+    def set_net_image(self,
+                      num_unet_layers: int,
+                      num_time_anchors: int,
+                      output_dim: int = 768):
         if self.original_ti:
             self.ti_embeddings = torch.nn.parameter.Parameter(
                 self.original_ti_init_embed.unsqueeze(0), requires_grad=True)
@@ -145,8 +145,8 @@ class NeTIMapper(nn.Module):
     def forward(self,
                 timestep: torch.Tensor,
                 unet_layer: torch.Tensor,
-                input_ids_placeholder_style: torch.Tensor,
-                tokenizer: nn.Embedding,
+                input_ids_placeholder: torch.Tensor,
+                image_encoder: CLIPVisionModel,
                 truncation_idx: int = None) -> MapperOutput:
         """
         Args:
@@ -159,7 +159,7 @@ class NeTIMapper(nn.Module):
             if self.embedding_type == "style":
                 idx = [
                     self.lookup_ti_embedding[p.item()].item()
-                    for p in input_ids_placeholder_style
+                    for p in input_ids_placeholder
                 ]
                 embedding = self.ti_embeddings[idx]
             else:
@@ -167,7 +167,7 @@ class NeTIMapper(nn.Module):
             return embedding
 
         embedding = self.extract_hidden_representation(
-            timestep, unet_layer, input_ids_placeholder_style, tokenizer)  # [bs, 128]
+            timestep, unet_layer, input_ids_placeholder, image_encoder)  # [bs, 128]
 
         if self.use_nested_dropout:
             embedding = self.apply_nested_dropout(
@@ -179,10 +179,10 @@ class NeTIMapper(nn.Module):
 
     def get_encoded_input(self, timestep: torch.Tensor,
                           unet_layer: torch.Tensor,
-                          input_ids_placeholder_style: torch.Tensor,
-                          tokenizer: nn.Embedding) -> torch.Tensor:
+                          input_ids_placeholder: torch.Tensor,
+                          image_encoder: CLIPVisionModel) -> torch.Tensor:
         """ Encode the (t,l, style_token_embed) params """
-        style_input = tokenizer(input_ids_placeholder_style)  # [2, 768]
+        style_input = tokenizer(input_ids_placeholder)  # [2, 768]
         encoded_input = self.encoder.encode(
             timestep,
             unet_layer,
@@ -196,7 +196,7 @@ class NeTIMapper(nn.Module):
         All possible view tokens that the mapper handles are known ahead of
         time. This method prepares lookup dicts from tokenids (and tokens) to
         the view parameters.
-
+    
         The `rescale_min_max` thing: at training, we put all the training view
         parameters in the range [-1,1]. If `rescale_min_max=True`, then we define
         the max and min parameters for that normalization based on the current
@@ -225,7 +225,6 @@ class NeTIMapper(nn.Module):
 
     def get_style_params_from_token(self, input_ids_placeholder_style, device,
                                     dtype):
-
         """
         Given a set of token ids, `input_ids_placeholder_view`, that correspond
         to tokens like <"view_10_40_1p2>", return a tensor of the camera params,
@@ -243,14 +242,14 @@ class NeTIMapper(nn.Module):
 
     def extract_hidden_representation(
             self, timestep: torch.Tensor, unet_layer: torch.Tensor,
-            input_ids_placeholder_style: torch.Tensor,
-            tokenizer: nn.Embedding) -> torch.Tensor:
+            input_ids_placeholder: torch.Tensor,
+            image_encoder: CLIPVisionModel) -> torch.Tensor:
         if self.embedding_type == 'object':
             pass
-        elif self.embedding_type == 'style':
-            encoded_input_style = self.get_encoded_input(timestep, unet_layer, input_ids_placeholder_style,
-                                                         tokenizer)  # [bs, 160]
-            embedding = self.net(encoded_input_style)  # [bs, 128]
+        elif self.embedding_type == 'img':
+            encoded_input = self.get_encoded_input(timestep, unet_layer, input_ids_placeholder,
+                                                   image_encoder)  # [bs, 160]
+            embedding = self.net(encoded_input)  # [bs, 128]
         else:
             raise ValueError()
 
