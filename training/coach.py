@@ -42,15 +42,20 @@ class Coach:
             torch.backends.cuda.matmul.allow_tf32 = True
 
         # Initialize models
-        self.tokenizer, self.noise_scheduler, self.text_encoder, self.image_encoder, self.vae, self.unet = self._init_sd_models()
+        (self.tokenizer, self.noise_scheduler, self.text_encoder, self.image_encoder,
+         self.vae, self.unet) = self._init_sd_models()
 
         # Initialize dataset and dataloader
         self.train_dataset = self._init_dataset()
         self.train_dataloader = self._init_dataloader(dataset=self.train_dataset)
 
         # Initialize placeholder tokens
+        self.placeholder_img_token = self.train_dataset.placeholder_img_token
         self.placeholder_new_tokens = self.train_dataset.placeholder_new_tokens
-        self.fixed_object_token = self.train_dataset.fixed_object_token
+        if self.placeholder_new_tokens is None:
+            self.placeholder_new_tokens = [self.placeholder_img_token]
+        else:
+            self.placeholder_new_tokens = [self.placeholder_img_token] + self.placeholder_new_tokens
         '''
         if self.cfg.eval.validation_new_tokens is not None:
             assert all([
@@ -60,17 +65,15 @@ class Coach:
         '''
 
         # add novel concepts
-        self.load_pretrained_object_neti = True if self.cfg.data.fixed_object_token_or_path is not None and Path(
-            self.cfg.data.fixed_object_token_or_path).suffix == '.pt' else False
         (self.token_embeds, self.placeholder_new_token_ids) = Coach._add_concept_token_to_tokenizer_static(
-            self.cfg, self.train_dataset.placeholder_new_tokens, self.tokenizer, self.text_encoder
+            self.cfg, self.placeholder_new_tokens, self.tokenizer, self.text_encoder
         )
 
         self.cfg.data.placeholder_new_tokens = self.placeholder_new_tokens
 
         # Initialize mapper and set mapper
-        neti_mapper_object_lookup, neti_mapper_new, self.loaded_iteration = self._init_neti_mapper()
-        self.text_encoder.text_model.embeddings.set_mapper(neti_mapper_object_lookup, neti_mapper_new)
+        neti_mapper, self.loaded_iteration = self._init_neti_mapper()
+        self.text_encoder.text_model.embeddings.set_mapper(neti_mapper)
         self._freeze_all_modules()
         self._set_attn_processor()
 
@@ -79,8 +82,10 @@ class Coach:
         self.lr_scheduler = self._init_scheduler(optimizer=self.optimizer)
 
         # Prepare everything with accelerator
-        self.text_encoder, self.optimizer, self.train_dataloader, self.lr_scheduler = self.accelerator.prepare(
-            self.text_encoder, self.optimizer, self.train_dataloader, self.lr_scheduler
+        (self.text_encoder, self.image_encoder, self.optimizer,
+         self.train_dataloader, self.lr_scheduler) = self.accelerator.prepare(
+            self.text_encoder, self.image_encoder, self.optimizer,
+            self.train_dataloader, self.lr_scheduler
         )
 
         # Reconfigure some parameters that we'll need for training
@@ -88,6 +93,7 @@ class Coach:
         self._set_model_weight_dtypes(weight_dtype=self.weight_dtype)
         self._init_trackers()
 
+        '''
         self.validator = ValidationHandler(cfg=self.cfg,
                                            placeholder_new_tokens=self.placeholder_new_tokens,
                                            placeholder_new_token_ids=self.placeholder_new_token_ids,
@@ -98,19 +104,7 @@ class Coach:
                                                     placeholder_new_tokens=self.placeholder_new_tokens,
                                                     placeholder_new_token_ids=self.placeholder_new_token_ids,
                                                     save_root=self.cfg.log.exp_dir)
-
-        #### tmp - for testing if the loaded object token works ####
-        if 0:
-            test_prompts = ["A photo of a <car>"]
-            self.validator.infer(accelerator=self.accelerator,
-                                 tokenizer=self.tokenizer,
-                                 text_encoder=self.text_encoder,
-                                 unet=self.unet,
-                                 vae=self.vae,
-                                 prompts=test_prompts,
-                                 num_images_per_prompt=1,
-                                 seeds=[42, 420, 501],
-                                 step=0)
+        '''
 
     def train(self):
         total_batch_size = self.cfg.optim.train_batch_size * self.accelerator.num_processes * \
@@ -182,6 +176,7 @@ class Coach:
                     progress_bar.update(1)
                     global_step += 1
                     self.logger.update_step(step=global_step)
+                    '''
                     if self._should_save(global_step=global_step):
                         self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
                                                            accelerator=self.accelerator,
@@ -198,7 +193,7 @@ class Coach:
                                              seeds=self.cfg.eval.validation_seeds,
                                              prompts=self.cfg.eval.validation_prompts,
                                              step=global_step)
-
+                    '''
                 logs = {"total_loss": loss.detach().item(), "lr": self.lr_scheduler.get_last_lr()[0]}
                 progress_bar.set_postfix(**logs)
                 self.accelerator.log(logs, step=global_step)
@@ -208,11 +203,13 @@ class Coach:
 
         # Save the final model
         self.accelerator.wait_for_everyone()
+        '''
         if self.accelerator.is_main_process:
             self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
                                                accelerator=self.accelerator,
                                                embeds_save_name=f"learned_embeds-final.bin",
                                                mapper_save_name=f"mapper-final.pt")
+        '''
         self.accelerator.end_training()
 
     def get_text_conditioning(self, input_ids: torch.Tensor,
@@ -256,6 +253,7 @@ class Coach:
                 f"No new tokens were added to the tokenizer"
                 f"Please pass a different `placeholder_token` that is not already in the tokenizer."
             )
+        print(f"A total of {num_added_tokens} tokens have been added.")
 
         # extract all the placeholder ids
         placeholder_new_token_ids = tokenizer.convert_tokens_to_ids(
@@ -265,8 +263,6 @@ class Coach:
         super_category_img_token_id = tokenizer.encode(
             cfg.data.super_category_img_token,
             add_special_tokens=False)
-
-        super_token_ids = super_category_img_token_id
 
         # Check if super_category_token is a single token or a sequence of tokens
         if len(super_category_img_token_id) != 1:
@@ -281,16 +277,11 @@ class Coach:
 
         # Initialize the newly added placeholder token with the embeddings of the super category token
         token_embeds = text_encoder.get_input_embeddings().weight.data
-        '''
         token_embeds[placeholder_new_token_ids] = token_embeds[
-            super_category_new_token_id].clone().unsqueeze(0).repeat(
+            super_category_img_token_id].clone().unsqueeze(0).repeat(
             len(placeholder_new_token_ids), 1)
-        token_embeds[placeholder_object_token_ids] = token_embeds[
-            super_category_object_token_id].clone().unsqueeze(0).repeat(
-            len(placeholder_object_token_ids), 1)
-        '''
 
-        ## Compute the norm of the super category token embedding for scaling mapper output
+        # Compute the norm of the super category token embedding for scaling mapper output
         cfg.model.target_norm_img = None
 
         if cfg.model.normalize_img_mapper_output:
@@ -312,21 +303,14 @@ class Coach:
             loaded_iteration = int(self.cfg.model.mapper_checkpoint_path.stem.split("-")[-1])
             print(f"Loaded NeTI mapper checkpoint from iteration: {loaded_iteration}")
 
-        if self.load_pretrained_object_neti:
-            _, neti_mapper_object = CheckpointHandler.load_mapper(
-                self.cfg.data.fixed_object_token_or_path, "object",
-                self.tokenizer)
-
         # hack
-        super_category_new_token = self.cfg.data.super_category_img_token
+        super_category_img_token = self.cfg.data.super_category_img_token
         original_ti_init_embed = self.text_encoder.get_input_embeddings().weight.data[
-            self.tokenizer.convert_tokens_to_ids(super_category_new_token)]
+            self.tokenizer.convert_tokens_to_ids(super_category_img_token)]
 
-        neti_mapper_img = NeTIMapper(
+        neti_mapper = NeTIMapper(
             embedding_type="img",
-            placeholder_new_tokens=self.placeholder_new_tokens,
-            placeholder_new_token_ids=self.placeholder_new_token_ids,
-            placeholder_new_token=None,
+            placeholder_token=None,
             output_dim=self.cfg.model.word_embedding_dim,
             arch_mlp_hidden_dims=self.cfg.model.arch_mlp_hidden_dims,
             use_nested_dropout=self.cfg.model.use_nested_dropout,
@@ -336,14 +320,14 @@ class Coach:
             use_positional_encoding_img,
             num_pe_time_anchors=self.cfg.model.num_pe_time_anchors,
             pe_sigmas=self.cfg.model.pe_sigmas,
-            arch_new_disable_tl=self.cfg.model.arch_img_disable_tl,
+            arch_disable_tl=self.cfg.model.arch_img_disable_tl,
             output_bypass=self.cfg.model.output_bypass_img,
             original_ti=self.cfg.model.original_ti,
             original_ti_init_embed=original_ti_init_embed,
             output_bypass_alpha=self.cfg.model.output_bypass_alpha_img,
             bypass_unconstrained=self.cfg.model.bypass_unconstrained_img)
 
-        return neti_mapper_img, loaded_iteration
+        return neti_mapper, loaded_iteration
 
     def _init_sd_models(self):
         tokenizer = self._init_tokenizer()
@@ -397,10 +381,11 @@ class Coach:
         # Freeze all parameters except for the mapper in text encoder
         self.text_encoder.text_model.encoder.requires_grad_(False)
         self.text_encoder.text_model.final_layer_norm.requires_grad_(False)
+        self.text_encoder.text_model.embeddings.token_embedding.requires_grad_(False)
         self.text_encoder.text_model.embeddings.position_embedding.requires_grad_(False)
         # Make sure to train the mapper
-        self.text_encoder.text_model.embeddings.mapper_new.requires_grad_(True)
-        self.text_encoder.text_model.embeddings.mapper_new.train()
+        self.text_encoder.text_model.embeddings.mapper.requires_grad_(True)
+        self.text_encoder.text_model.embeddings.mapper.train()
         if self.cfg.optim.gradient_checkpointing:
             # Keep unet in train mode if we are using gradient checkpointing to save memory.
             # The dropout cannot be != 0 so it doesn't matter if we are in eval or train mode.
@@ -412,20 +397,9 @@ class Coach:
         self.unet.set_attn_processor(XTIAttenProc())
 
     def _init_dataset(self) -> Union[Fashion200KDataset, FashionIQDataset]:
-        if self.cfg.data.dataset == "fashion200k":
-            dataset = Fashion200KDataset(
-                fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
-                data_root=self.cfg.data.train_data_dir,
-                tokenizer=self.tokenizer,
-                size=self.cfg.data.resolution,
-                repeats=self.cfg.data.repeats,
-                center_crop=self.cfg.data.center_crop,
-                set="train"
-            )
-        elif self.cfg.data.dataset == "fashion_iq":
+        if self.cfg.data.dataset == "fashion_iq":
             dataset = FashionIQDataset(
-                placeholder_object_token=self.cfg.data.placeholder_object_token,
-                fixed_object_token_or_path=self.cfg.data.fixed_object_token_or_path,
+                placeholder_img_token=self.cfg.data.placeholder_img_token,
                 data_root=self.cfg.data.train_data_dir,
                 tokenizer=self.tokenizer,
                 image_encoder=self.image_encoder,
@@ -452,7 +426,7 @@ class Coach:
                                             self.cfg.optim.train_batch_size *
                                             self.accelerator.num_processes)
         optimizer = torch.optim.AdamW(
-            self.text_encoder.text_model.embeddings.mapper_new.parameters(),  # only optimize the embeddings
+            self.text_encoder.text_model.embeddings.mapper.parameters(),  # only optimize the embeddings
             lr=self.cfg.optim.learning_rate,
             betas=(self.cfg.optim.adam_beta1, self.cfg.optim.adam_beta2),
             weight_decay=self.cfg.optim.adam_weight_decay,

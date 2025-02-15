@@ -22,10 +22,8 @@ class NeTICLIPTextEmbeddings(nn.Module):
             "position_ids",
             torch.arange(config.max_position_embeddings).expand((1, -1)))
 
-    def set_mapper(self, mapper_object_lookup: Dict[str, NeTIMapper],
-                   mapper_style: NeTIMapper, device='cuda'):
-        self.mapper_object_lookup = mapper_object_lookup
-        self.mapper_style = mapper_style
+    def set_mapper(self, mapper: NeTIMapper, device='cuda'):
+        self.mapper = mapper
 
         # because its a dict, it won't put the mappers on cuda automatically
         # for k, v in self.mapper_object_lookup.items():
@@ -54,84 +52,44 @@ class NeTICLIPTextEmbeddings(nn.Module):
         ####################################################################
         # NeTI logic - Use mapper to overwrite the learnable token embedding
         ####################################################################
-        bypass_outputs_object, bypass_outputs_style = None, None
-        bypass_unconstrained_object, bypass_unconstrained_style = False, False
-        output_bypass_alpha_object, output_bypass_alpha_style = None, None
+        bypass_outputs = None
+        bypass_unconstrained = False
+        output_bypass_alpha = None
 
         if batch is not None:
-            ## for the object-mapper and view-mapper, separately look up the new
-            # embedding values, get the output_bypass, and remap the embeddings
-
-            if self.mapper_object_lookup is not None:
-                # lookup the object idx
-                assert torch.all(batch.input_ids_placeholder_object ==
-                                 batch.input_ids_placeholder_object[0])
-                idx = batch.input_ids_placeholder_object[0].item()
-                mapper_object = self.mapper_object_lookup[idx]
+            if self.mapper is not None:
+                assert torch.all(batch.input_ids_placeholder_img ==
+                                 batch.input_ids_placeholder_img[0])
 
                 # compute the (t,l)-conditioned embedding
-                mapper_object_outputs = mapper_object(
+                mapper = self.mapper(
                     timestep=batch.timesteps.float(),
                     unet_layer=batch.unet_layers.float(),
-                    input_ids_placeholder_view=None,
+                    image_embeds=batch.image_embeds,
                     truncation_idx=batch.truncation_idx,
                 )
                 # strength of the output bypass -> to pass up to the encoder
-                output_bypass_alpha_object = mapper_object_outputs.output_bypass_alpha
+                output_bypass_alpha = mapper.output_bypass_alpha
 
                 # flag for whether we have the 'bypass_unconstrained' training mode
-                bypass_unconstrained_object = mapper_object_outputs.bypass_unconstrained
+                bypass_unconstrained = mapper.bypass_unconstrained
 
                 # word embedding vector
-                word_embedding = mapper_object_outputs.word_embedding.to(
+                word_embedding = mapper.word_embedding.to(
                     dtype=inputs_embeds.dtype, device=inputs_embeds.device)
 
                 # output_bypass if that flag is on
-                if mapper_object.output_bypass:
-                    bypass_outputs_object = mapper_object_outputs.bypass_output.to(
+                if mapper.output_bypass:
+                    bypass_outputs = mapper.bypass_output.to(
                         dtype=inputs_embeds.dtype, device=inputs_embeds.device)
 
                 # replace special token embedding.
                 locs = (input_ids ==
-                        batch.input_ids_placeholder_object.unsqueeze(1))
-                assert all(locs.sum(1) == 1)
-                inputs_embeds[torch.where(locs)] = word_embedding
-
-            # The second term in the if statement checks that input_view_ids are passed
-            # This is bc, even if a mapper_view exists, we may still test prompts that
-            # don't include that token.
-            if self.mapper_style is not None and not all(
-                    batch.input_ids_placeholder_style == -1):
-                mapper_style_outputs = self.mapper_style(  # dict
-                    timestep=batch.timesteps.float(),
-                    unet_layer=batch.unet_layers.float(),
-                    input_ids_placeholder_style=batch.input_ids_placeholder_style,
-                    tokenizer=self.token_embedding,
-                    truncation_idx=batch.truncation_idx)  # return dict, word_embedding (2, 768)
-                # strength of the output bypass -> to pass up to the encoder
-                output_bypass_alpha_style = mapper_style_outputs.output_bypass_alpha
-
-                # flag for whether we have the 'bypass_unconstrained' training mode
-                bypass_unconstrained_style = mapper_style_outputs.bypass_unconstrained
-
-                # word embedding vector
-                word_embedding = mapper_style_outputs.word_embedding.to(
-                    dtype=inputs_embeds.dtype, device=inputs_embeds.device)  # (2, 768)
-
-                # pull out the output_bypass if that flag is on
-                if self.mapper_style.output_bypass:
-                    bypass_outputs_style = mapper_style_outputs.bypass_output.to(
-                        dtype=inputs_embeds.dtype, device=inputs_embeds.device)
-
-                # replace special token embedding.
-                locs = (
-                        input_ids == batch.input_ids_placeholder_style.unsqueeze(1))
+                        batch.input_ids_placeholder_img.unsqueeze(1))
                 assert all(locs.sum(1) == 1)
                 inputs_embeds[torch.where(locs)] = word_embedding
 
         position_embeddings = self.position_embedding(position_ids)
         embeddings = inputs_embeds + position_embeddings
 
-        return (embeddings, bypass_outputs_object, bypass_outputs_style,
-                bypass_unconstrained_object, bypass_unconstrained_style,
-                output_bypass_alpha_object, output_bypass_alpha_style)
+        return (embeddings, bypass_outputs, bypass_unconstrained, output_bypass_alpha)

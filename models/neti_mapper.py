@@ -30,14 +30,12 @@ class NeTIMapper(nn.Module):
             pe_sigmas: PESigmas = PESigmas(sigma_t=0.03,
                                            sigma_l=2.0),
             output_bypass: bool = True,
-            placeholder_new_tokens: List[str] = None,
-            placeholder_new_token_ids: torch.Tensor = None,
-            arch_new_disable_tl: bool = True,
+            arch_disable_tl: bool = True,
             original_ti_init_embed=None,
             original_ti: bool = False,
             bypass_unconstrained: bool = True,
             output_bypass_alpha: float = 0.2,
-            placeholder_new_token: str = None,
+            placeholder_token: str = None,
     ):
         """
         Args:
@@ -59,11 +57,11 @@ class NeTIMapper(nn.Module):
         self.arch_mlp_hidden_dims = arch_mlp_hidden_dims
         self.norm_scale = norm_scale
         self.original_ti = original_ti
-        self.arch_new_disable_tl = arch_new_disable_tl
+        self.arch_disable_tl = arch_disable_tl
         self.original_ti_init_embed = original_ti_init_embed
         self.output_bypass_alpha = output_bypass_alpha
         self.num_unet_layers = len(unet_layers)
-        self.placeholder_new_token = placeholder_new_token  # does nothing
+        self.placeholder_token = placeholder_token  # does nothing
         self.bypass_unconstrained = bypass_unconstrained
 
         if original_ti and output_bypass:
@@ -74,15 +72,6 @@ class NeTIMapper(nn.Module):
         if self.output_bypass:
             output_dim *= 2  # Output two vectors
 
-        # for view mappers, prepare some class properties for the view tokens
-        if self.embedding_type == "style":
-            '''
-            self.placeholder_style_tokens = placeholder_style_tokens
-            self.placeholder_style_token_ids = placeholder_style_token_ids
-            self._prepare_style_token_param_lookup()
-            '''
-
-        # set up positional encoding. For older experiments (arch_view_net<14),
         # use the legacy (t,l) conditioning. For later exps, call func for setup
         self.pe_sigmas = pe_sigmas
         self.use_positional_encoding = use_positional_encoding
@@ -110,10 +99,8 @@ class NeTIMapper(nn.Module):
             self.set_net_image(num_unet_layers=len(unet_layers),
                                num_time_anchors=num_pe_time_anchors,
                                output_dim=output_dim)
-        elif self.embedding_type == "style":
-            self.set_net_style(num_unet_layers=len(unet_layers),
-                               num_time_anchors=num_pe_time_anchors,
-                               output_dim=output_dim)
+        else:
+            raise ValueError(f"Unknown embedding type {self.embedding_type}")
 
     def set_net_image(self,
                       num_unet_layers: int,
@@ -145,29 +132,17 @@ class NeTIMapper(nn.Module):
     def forward(self,
                 timestep: torch.Tensor,
                 unet_layer: torch.Tensor,
-                input_ids_placeholder: torch.Tensor,
-                image_encoder: CLIPVisionModel,
-                truncation_idx: int = None) -> MapperOutput:
+                image_embeds: torch.Tensor,
+                truncation_idx: int = None,
+                ) -> MapperOutput:
         """
         Args:
         input_ids_placeholder_view: If embedding_type=='object', ignored. If
             embedding_type=='view', use the token id to condition on the view
             parameters for that token.
         """
-        if self.original_ti or (self.embedding_type == "style"
-                                and self.arch_style_net == 1):
-            if self.embedding_type == "style":
-                idx = [
-                    self.lookup_ti_embedding[p.item()].item()
-                    for p in input_ids_placeholder
-                ]
-                embedding = self.ti_embeddings[idx]
-            else:
-                embedding = self.ti_embeddings[[0] * len(timestep)]
-            return embedding
-
         embedding = self.extract_hidden_representation(
-            timestep, unet_layer, input_ids_placeholder, image_encoder)  # [bs, 128]
+            timestep, unet_layer, image_embeds)  # [bs, 128]
 
         if self.use_nested_dropout:
             embedding = self.apply_nested_dropout(
@@ -179,79 +154,21 @@ class NeTIMapper(nn.Module):
 
     def get_encoded_input(self, timestep: torch.Tensor,
                           unet_layer: torch.Tensor,
-                          input_ids_placeholder: torch.Tensor,
-                          image_encoder: CLIPVisionModel) -> torch.Tensor:
-        """ Encode the (t,l, style_token_embed) params """
-        style_input = tokenizer(input_ids_placeholder)  # [2, 768]
+                          image_embeds: torch.Tensor) -> torch.Tensor:
+        """ Encode the (t,l, image_token_embeds) params """
         encoded_input = self.encoder.encode(
             timestep,
             unet_layer,
-            style_input
+            image_embeds
         )  # [bs, 2304]
 
         return self.input_layer(encoded_input)  # (bs, 160)
 
-    def _prepare_style_token_param_lookup(self):
-        """
-        All possible view tokens that the mapper handles are known ahead of
-        time. This method prepares lookup dicts from tokenids (and tokens) to
-        the view parameters.
-    
-        The `rescale_min_max` thing: at training, we put all the training view
-        parameters in the range [-1,1]. If `rescale_min_max=True`, then we define
-        the max and min parameters for that normalization based on the current
-        self.placeholder_view_tokens. So this should only be called when those
-        placeholder tokens are the same as what was done in training.
-        For inference, this is handled by the CheckpointHandler.load_mapper()
-        method (which calls the public-facing function `add_view_tokens_to_vocab`).
-        But if this func is run with `rescale_min_max=True` with the wrong
-        placeholders [set] to self, then the generations will become weird
-        """
-        assert len(self.placeholder_style_tokens) == len(
-            self.placeholder_style_token_ids)
-
-        assert all([
-            s[:7] == '<style_' for s in self.placeholder_style_tokens
-        ]), "not style tokens"
-
-        style_params = [[
-            s for s in token[7:]
-        ] for token in self.placeholder_style_tokens]
-
-        self.style_token_2_style_params = dict(
-            zip(self.placeholder_style_tokens, style_params))
-        self.style_tokenid_2_view_params = dict(
-            zip(self.placeholder_style_token_ids, style_params))
-
-    def get_style_params_from_token(self, input_ids_placeholder_style, device,
-                                    dtype):
-        """
-        Given a set of token ids, `input_ids_placeholder_view`, that correspond
-        to tokens like <"view_10_40_1p2>", return a tensor of the camera params,
-        e.g. params (10,40,1.2). The dimension is (bs,3), where each batch element
-        is
-        """
-
-        # lookup the view parameters
-        style_params = [
-            self.style_tokenid_2_style_params[i.item()]
-            for i in input_ids_placeholder_style
-        ]
-
-        return style_params
-
     def extract_hidden_representation(
-            self, timestep: torch.Tensor, unet_layer: torch.Tensor,
-            input_ids_placeholder: torch.Tensor,
-            image_encoder: CLIPVisionModel) -> torch.Tensor:
-        if self.embedding_type == 'object':
-            pass
-        elif self.embedding_type == 'img':
-            encoded_input = self.get_encoded_input(timestep, unet_layer, input_ids_placeholder,
-                                                   image_encoder)  # [bs, 160]
-            embedding = self.net(encoded_input)  # [bs, 128]
-        else:
-            raise ValueError()
+            self, timestep: torch.Tensor, unet_layer: torch.Tensor
+            , image_embeds: torch.Tensor) -> torch.Tensor:
+        encoded_input = self.get_encoded_input(timestep, unet_layer, image_embeds)  # [bs, 160]
+        embedding = self.net(encoded_input)  # [bs, 128]
 
         return embedding
 
@@ -293,61 +210,3 @@ class NeTIMapper(nn.Module):
                                                 dim=-1) * self.norm_scale
 
         return output
-
-    def add_view_tokens_to_vocab(self, placeholder_view_tokens_new: List[str],
-                                 placeholder_view_token_ids_new: List[int]):
-        """
-        Add new tokens to the vocabulary.
-        This is intended to be called by external scripts doing inference with
-        novel view tokens (tokens that were not used in training).
-        """
-        assert len(placeholder_view_tokens_new) == len(
-            placeholder_view_token_ids_new)
-
-        ## get ids of tokens that are novel
-        mask_new_tokens = ~np.isin(np.array(placeholder_view_tokens_new),
-                                   np.array(self.placeholder_view_tokens))
-        mask_new_token_ids = ~np.isin(
-            np.array(placeholder_view_token_ids_new),
-            np.array(self.placeholder_view_token_ids))
-        assert np.all(np.all(mask_new_tokens == mask_new_token_ids))
-        idxs_new_tokens = np.where(mask_new_tokens)[0]
-
-        # add the new tokens to the index
-        self.placeholder_view_tokens += [
-            placeholder_view_tokens_new[i] for i in idxs_new_tokens
-        ]
-        self.placeholder_view_token_ids += [
-            placeholder_view_token_ids_new[i] for i in idxs_new_tokens
-        ]
-
-        # recreate the lookup table WITHOUT rescaling the ranges of the MLP
-        self._prepare_view_token_param_lookup(rescale_min_max=False)
-
-    def set_net_style(self,
-                      num_unet_layers: int,
-                      num_time_anchors: int,
-                      output_dim: int = 768):
-        # Original-TI (also has arch-code-1)
-        if self.original_ti or self.arch_style_net == 1:
-            # baseline - TI baseline, which is one thing no matter what.
-            assert self.original_ti_init_embed is not None
-            if self.output_bypass:
-                raise
-            self.ti_embeddings = self.original_ti_init_embed.unsqueeze(
-                0).repeat(len(self.placeholder_view_token_ids), 1)
-            self.ti_embeddings = torch.nn.parameter.Parameter(
-                self.ti_embeddings.clone(), requires_grad=True)
-            # self.ti_embeddings.register_hook(lambda x: print(x))
-            self.lookup_ti_embedding = dict(
-                zip(self.placeholder_view_token_ids,
-                    torch.arange(len(self.placeholder_view_token_ids))))
-            self.output_layer = nn.Identity()  # the MLP aready does projection
-
-        else:
-            h_dim = 64
-            self.net = nn.Sequential(nn.Linear(self.input_dim, h_dim),
-                                     nn.LayerNorm(h_dim), nn.LeakyReLU(),
-                                     nn.Linear(h_dim, h_dim),
-                                     nn.LayerNorm(h_dim), nn.LeakyReLU())
-            self.output_layer = nn.Sequential(nn.Linear(h_dim, output_dim))

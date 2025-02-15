@@ -8,8 +8,9 @@ import torch
 @dataclass
 class NeTIBatch:
     input_ids: torch.Tensor
-    input_ids_placeholder_object: torch.Tensor
+    input_ids_placeholder_img: torch.Tensor
     input_ids_placeholder_new: torch.Tensor
+    image_embeds: torch.Tensor
     timesteps: torch.Tensor
     unet_layers: torch.Tensor
     truncation_idx: Optional[int] = None

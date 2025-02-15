@@ -1,0 +1,71 @@
+data:
+  center_crop: false
+  dataloader_num_workers: 8
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+eval:
+  eval_placeholder_img_tokens:
+  - <skull>
+  - <statue>
+  - <statue2>
+  - <toy>
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - A {} has a no v-neck and has two colors.
+  - A {} without a red belt and is more orange and is shorter
+  - A {} is not cream with long sleeves and is white and more casual.
+  - A {} is not green with short sleeves and is darker ion color.
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-base-patch16
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 0
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 2
