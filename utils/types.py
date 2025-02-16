@@ -27,4 +27,5 @@ class MapperOutput:
     word_embedding: torch.Tensor
     bypass_output: torch.Tensor
     bypass_unconstrained: bool
+    output_bypass: bool
     output_bypass_alpha: float

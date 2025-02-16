@@ -23,7 +23,7 @@ class NeTIPositionalEncoding(nn.Module):
     def encode(self,
                t: Union[int, torch.Tensor],
                l: Union[int, torch.Tensor],
-               token_embed: torch.Tensor):
+               token_embed: torch.Tensor = None):
         """ Maps the given time and layer input into a 2816-dimensional vector. """
         if type(t) == int or t.ndim == 0:
             x = torch.tensor([t, l]).float()

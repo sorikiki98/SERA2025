@@ -88,10 +88,7 @@ class NeTICLIPTextTransformer(CLIPTextTransformer):
         elif batch is not None:
             input_shape = batch.input_ids.size()  # (2, 77)
             batch.input_ids = batch.input_ids.view(-1, input_shape[-1])
-            (hidden_states, bypass_outputs_object, bypass_outputs_style,
-             bypass_unconstrained_object, bypass_unconstrained_style,
-             output_bass_alpha_object,
-             output_bass_alpha_style) = self.embeddings(
+            (hidden_states, bypass_outputs, bypass_unconstrained, output_bass_alpha) = self.embeddings(
                 batch=batch, position_ids=position_ids)
         else:
             raise ValueError("You have to specify either batch or input_ids!")
@@ -123,22 +120,20 @@ class NeTICLIPTextTransformer(CLIPTextTransformer):
         # NeTI logic - compute the scaled bypass output
         ###############################################
 
-        #### << begin tmp code >> ####
+        '''
+        if bypass_outputs is not None:
 
-        bypass_output = bypass_outputs_object
-        if bypass_output is not None:
-
-            placeholder_token_id = batch.input_ids_placeholder_object[0].item()
+            placeholder_token_id = batch.input_ids_placeholder_img[0].item()
             learnable_idxs = (batch.input_ids == placeholder_token_id).nonzero(
                 as_tuple=True)[1]
             existing_state = last_hidden_state_with_bypass[
                 torch.arange(last_hidden_state.shape[0]), learnable_idxs]  # (1, 768)
 
-            if not bypass_unconstrained_object:
+            if not bypass_unconstrained:
                 bypass_output = bypass_output / bypass_output.norm(dim=1, keepdim=True) \
                                 * existing_state.norm(dim=1, keepdim=True)  # this step matches the norm.
                 # new_state = existing_state + 0.2 * bypass_output
-                new_state = existing_state + output_bass_alpha_object * bypass_output
+                new_state = existing_state + output_bass_alpha * bypass_output
             else:
                 normalizing_term = last_hidden_state_with_bypass.norm(
                     dim=-1).mean(-1)  # (bs,)
@@ -150,34 +145,7 @@ class NeTICLIPTextTransformer(CLIPTextTransformer):
             last_hidden_state_with_bypass[
                 torch.arange(last_hidden_state.shape[0]),
                 learnable_idxs] = new_state
-
-        if bypass_outputs_style is not None:
-            bypass_output = bypass_outputs_style
-            learnable_idxs = torch.where(
-                torch.isin(batch.input_ids,
-                           batch.input_ids_placeholder_style))[1]
-
-            # learnable_idxs = (batch.input_ids == placeholder_token_id).nonzero(as_tuple=True)[1]
-            existing_state = last_hidden_state_with_bypass[
-                torch.arange(last_hidden_state.shape[0]), learnable_idxs]
-
-            if not bypass_unconstrained_style:
-                bypass_output = bypass_output / bypass_output.norm(dim=1, keepdim=True) \
-                                * existing_state.norm(dim=1, keepdim=True)  # this step matches the norm.
-                # new_state = existing_state + 0.2 * bypass_output
-                new_state = existing_state + output_bass_alpha_style * bypass_output
-            else:
-                normalizing_term = last_hidden_state_with_bypass.norm(
-                    dim=-1).mean(-1)  # (bs,)
-                normalizing_term = normalizing_term.detach()
-                new_state = bypass_output / bypass_output.norm(dim=1, keepdim=True) \
-                            * normalizing_term.unsqueeze(1)
-
-            new_state = new_state.to(dtype=hidden_states.dtype)
-            last_hidden_state_with_bypass[
-                torch.arange(last_hidden_state.shape[0]),
-                learnable_idxs] = new_state
-        #### <<  end tmp code >> ####
+        '''
 
         last_hidden_state = self.final_layer_norm(last_hidden_state)
         last_hidden_state_with_bypass = self.final_layer_norm(

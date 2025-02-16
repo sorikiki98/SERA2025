@@ -59,6 +59,7 @@ class NeTIMapper(nn.Module):
         self.original_ti = original_ti
         self.arch_disable_tl = arch_disable_tl
         self.original_ti_init_embed = original_ti_init_embed
+        self.output_bypass = output_bypass
         self.output_bypass_alpha = output_bypass_alpha
         self.num_unet_layers = len(unet_layers)
         self.placeholder_token = placeholder_token  # does nothing
@@ -195,6 +196,7 @@ class NeTIMapper(nn.Module):
             output = MapperOutput(word_embedding=embedding,
                                   bypass_output=None,
                                   bypass_unconstrained=False,
+                                  output_bypass=self.output_bypass,
                                   output_bypass_alpha=self.output_bypass_alpha)
         else:
             dim = embedding.shape[1] // 2
@@ -202,6 +204,7 @@ class NeTIMapper(nn.Module):
                 word_embedding=embedding[:, :dim],
                 bypass_output=embedding[:, dim:],
                 bypass_unconstrained=self.bypass_unconstrained,
+                output_bypass=self.output_bypass,
                 output_bypass_alpha=self.output_bypass_alpha)
 
         # apply norm scaling to the word embedding (if enabled)

@@ -1,8 +1,8 @@
 import ipdb
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Union, Any
 
 import torch
-from torch import nn
+from torch import nn, Tensor
 from transformers import CLIPTextConfig
 
 from models.neti_mapper import NeTIMapper
@@ -35,7 +35,7 @@ class NeTICLIPTextEmbeddings(nn.Module):
             position_ids: Optional[torch.LongTensor] = None,
             inputs_embeds: Optional[torch.FloatTensor] = None,
             batch: Optional[NeTIBatch] = None
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    ) -> Tuple[Union[Tensor, Any], Optional[Any], Union[bool, Any], Optional[Any]]:
 
         if batch is not None:
             input_ids = batch.input_ids
@@ -92,4 +92,4 @@ class NeTICLIPTextEmbeddings(nn.Module):
         position_embeddings = self.position_embedding(position_ids)
         embeddings = inputs_embeds + position_embeddings
 
-        return (embeddings, bypass_outputs, bypass_unconstrained, output_bypass_alpha)
+        return embeddings, bypass_outputs, bypass_unconstrained, output_bypass_alpha

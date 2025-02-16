@@ -50,7 +50,7 @@ class ModelConfig:
     """ Parameters for defining all models """
     # Path to pretrained model or model identifier from huggingface.co/models
     pretrained_diffusion_model_name_or_path: str = "CompVis/stable-diffusion-v1-4"
-    pretrained_image_model_name_or_path: str = "openai/clip-vit-base-patch16"
+    pretrained_image_model_name_or_path: str = "openai/clip-vit-large-patch14"
     # dimension of word embedding. Is 768 if sd1 and 1024 if sd2
     word_embedding_dim: int = 768
     # dimension of hidden layers in the MLP

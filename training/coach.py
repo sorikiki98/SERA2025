@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import Optional, Dict, Tuple, List, Union
+from typing import Optional, Dict, Tuple, List, Union, Callable
 
+import PIL
 import diffusers
 import torch
 import torch.nn.functional as F
-import torch.utils.checkpoint
+
 import transformers
 from accelerate import Accelerator
 from accelerate.utils import ProjectConfiguration, set_seed
@@ -12,8 +13,7 @@ from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from diffusers.optimization import get_scheduler
 from torch.utils.data import Dataset
 from tqdm.auto import tqdm
-from transformers import CLIPTokenizer
-from transformers.models.clip.modeling_clip import CLIPVisionModel
+from transformers import CLIPTokenizer, CLIPVisionModelWithProjection, CLIPImageProcessor
 
 from checkpoint_handler import CheckpointHandler
 from constants import UNET_LAYERS
@@ -42,7 +42,7 @@ class Coach:
             torch.backends.cuda.matmul.allow_tf32 = True
 
         # Initialize models
-        (self.tokenizer, self.noise_scheduler, self.text_encoder, self.image_encoder,
+        (self.tokenizer, self.noise_scheduler, self.text_encoder, self.image_encoder, self.image_processor,
          self.vae, self.unet) = self._init_sd_models()
 
         # Initialize dataset and dataloader
@@ -82,9 +82,9 @@ class Coach:
         self.lr_scheduler = self._init_scheduler(optimizer=self.optimizer)
 
         # Prepare everything with accelerator
-        (self.text_encoder, self.image_encoder, self.optimizer,
+        (self.text_encoder, self.optimizer,
          self.train_dataloader, self.lr_scheduler) = self.accelerator.prepare(
-            self.text_encoder, self.image_encoder, self.optimizer,
+            self.text_encoder, self.optimizer,
             self.train_dataloader, self.lr_scheduler
         )
 
@@ -138,11 +138,13 @@ class Coach:
                     noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
 
                     # Get the text embedding for conditioning
+
                     _hs = self.get_text_conditioning(input_ids=batch['input_ids'],
-                                                     input_ids_placeholder_object=batch[
-                                                         'input_ids_placeholder_object'],
+                                                     input_ids_placeholder_img=batch[
+                                                         'input_ids_placeholder_img'],
                                                      input_ids_placeholder_new=batch[
                                                          'input_ids_placeholder_new'],
+                                                     image_embeds=batch['image_embeds'],
                                                      timesteps=timesteps,
                                                      device=latents.device)
 
@@ -213,8 +215,9 @@ class Coach:
         self.accelerator.end_training()
 
     def get_text_conditioning(self, input_ids: torch.Tensor,
-                              input_ids_placeholder_object: List[int],
+                              input_ids_placeholder_img: List[int],
                               input_ids_placeholder_new: List[int],
+                              image_embeds: torch.Tensor,
                               timesteps: torch.Tensor,
                               device: torch.device) -> Dict:
         """ Compute the text conditioning for the current batch of images using our text encoder over-ride. """
@@ -222,8 +225,9 @@ class Coach:
         for layer_idx, unet_layer in enumerate(UNET_LAYERS):
             neti_batch = NeTIBatch(
                 input_ids=input_ids,
-                input_ids_placeholder_object=input_ids_placeholder_object,
+                input_ids_placeholder_img=input_ids_placeholder_img,
                 input_ids_placeholder_new=input_ids_placeholder_new,
+                image_embeds=image_embeds,
                 timesteps=timesteps,
                 unet_layers=torch.tensor(layer_idx, device=device).repeat(timesteps.shape[0])
             )
@@ -334,9 +338,10 @@ class Coach:
         noise_scheduler = self._init_noise_scheduler()
         text_encoder = self._init_text_encoder()
         image_encoder = self._init_image_encoder()
+        image_processor = self._init_image_processor()
         vae = self._init_vae()
         unet = self._init_unet()
-        return tokenizer, noise_scheduler, text_encoder, image_encoder, vae, unet
+        return tokenizer, noise_scheduler, text_encoder, image_encoder, image_processor, vae, unet
 
     def _init_tokenizer(self) -> CLIPTokenizer:
         tokenizer = CLIPTokenizer.from_pretrained(
@@ -350,11 +355,18 @@ class Coach:
         )
         return noise_scheduler
 
-    def _init_image_encoder(self) -> CLIPVisionModel:
-        image_encoder = CLIPVisionModel.from_pretrained(
-            self.cfg.model.pretrained_image_model_name_or_path
-        )
+    def _init_image_encoder(self):
+        image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+            self.cfg.model.pretrained_image_model_name_or_path,
+            torch_dtype=torch.float16)
+
         return image_encoder
+
+    def _init_image_processor(self) -> CLIPImageProcessor:
+        preprocess = CLIPImageProcessor.from_pretrained(
+            self.cfg.model.pretrained_image_model_name_or_path)
+
+        return preprocess
 
     def _init_text_encoder(self) -> NeTICLIPTextModel:
         text_encoder = NeTICLIPTextModel.from_pretrained(
@@ -383,6 +395,7 @@ class Coach:
         self.text_encoder.text_model.final_layer_norm.requires_grad_(False)
         self.text_encoder.text_model.embeddings.token_embedding.requires_grad_(False)
         self.text_encoder.text_model.embeddings.position_embedding.requires_grad_(False)
+        self.image_encoder.requires_grad_(False)
         # Make sure to train the mapper
         self.text_encoder.text_model.embeddings.mapper.requires_grad_(True)
         self.text_encoder.text_model.embeddings.mapper.train()
@@ -403,10 +416,12 @@ class Coach:
                 data_root=self.cfg.data.train_data_dir,
                 tokenizer=self.tokenizer,
                 image_encoder=self.image_encoder,
+                image_processor=self.image_processor,
                 size=self.cfg.data.resolution,
                 repeats=self.cfg.data.repeats,
                 center_crop=self.cfg.data.center_crop,
-                split="train"
+                split="train",
+                device=self.accelerator.device
             )
         else:
             raise ValueError(f"Unknown dataset type!")
@@ -414,6 +429,7 @@ class Coach:
 
     def _init_dataloader(self, dataset: Dataset) -> torch.utils.data.DataLoader:
         dataloader = torch.utils.data.DataLoader(dataset,
+                                                 multiprocessing_context='spawn',
                                                  batch_size=self.cfg.optim.train_batch_size,
                                                  shuffle=True,
                                                  num_workers=self.cfg.data.dataloader_num_workers)

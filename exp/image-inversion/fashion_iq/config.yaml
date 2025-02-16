@@ -6,7 +6,7 @@ data:
   repeats: 1
   resolution: 224
   super_category_img_token: photo
-  train_data_dir: C:\\Users\\user\\KDBC2024\\dataset\\fashion_iq\\
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
 eval:
   eval_placeholder_img_tokens:
   - <skull>
@@ -47,11 +47,11 @@ model:
     sigma_l: 2.0
     sigma_t: 0.03
   pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
-  pretrained_image_model_name_or_path: openai/clip-vit-base-patch16
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
   revision: null
   target_norm_img: null
   use_nested_dropout: true
-  use_positional_encoding_img: 0
+  use_positional_encoding_img: 1
   word_embedding_dim: 768
 optim:
   adam_beta1: 0.9
