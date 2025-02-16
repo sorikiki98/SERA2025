@@ -7,7 +7,6 @@ import torch
 import torch.nn.functional as F
 
 import transformers
-from accelerate import Accelerator
 from accelerate.utils import ProjectConfiguration, set_seed
 from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
 from diffusers.optimization import get_scheduler
@@ -35,11 +34,13 @@ class Coach:
         self.logger = CoachLogger(cfg=cfg)
 
         # Initialize some basic stuff
-        self.accelerator = self._init_accelerator()
         if self.cfg.optim.seed is not None:
             set_seed(self.cfg.optim.seed)
         if self.cfg.optim.allow_tf32:
             torch.backends.cuda.matmul.allow_tf32 = True
+
+        # Initialize cuda device
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Initialize models
         (self.tokenizer, self.noise_scheduler, self.text_encoder, self.image_encoder, self.image_processor,
@@ -81,17 +82,9 @@ class Coach:
         self.optimizer = self._init_optimizer()
         self.lr_scheduler = self._init_scheduler(optimizer=self.optimizer)
 
-        # Prepare everything with accelerator
-        (self.text_encoder, self.optimizer,
-         self.train_dataloader, self.lr_scheduler) = self.accelerator.prepare(
-            self.text_encoder, self.optimizer,
-            self.train_dataloader, self.lr_scheduler
-        )
-
         # Reconfigure some parameters that we'll need for training
-        self.weight_dtype = self._get_weight_dtype()
+        self.weight_dtype = torch.float16
         self._set_model_weight_dtypes(weight_dtype=self.weight_dtype)
-        self._init_trackers()
 
         '''
         self.validator = ValidationHandler(cfg=self.cfg,
@@ -107,104 +100,88 @@ class Coach:
         '''
 
     def train(self):
-        total_batch_size = self.cfg.optim.train_batch_size * self.accelerator.num_processes * \
-                           self.cfg.optim.gradient_accumulation_steps
+        total_batch_size = self.cfg.optim.train_batch_size
         self.logger.log_start_of_training(total_batch_size=total_batch_size, num_samples=len(self.train_dataset))
 
         global_step = self._set_global_step()
-        progress_bar = tqdm(range(global_step, self.cfg.optim.max_train_steps),
-                            disable=not self.accelerator.is_local_main_process)
+        progress_bar = tqdm(range(global_step, self.cfg.optim.max_train_steps))
         progress_bar.set_description("Steps")
 
-        orig_embeds_params = self.accelerator.unwrap_model(self.text_encoder).get_input_embeddings().weight.data.clone()
+        orig_embeds_params = self.text_encoder.get_input_embeddings().weight.data.clone()
         while global_step < self.cfg.optim.max_train_steps:
 
             self.text_encoder.train()
             for step, batch in enumerate(self.train_dataloader):
-                with self.accelerator.accumulate(self.text_encoder):
-                    # Convert images to latent space
-                    latent_batch = batch["pixel_values"].to(dtype=self.weight_dtype)
-                    latents = self.vae.encode(latent_batch).latent_dist.sample().detach()
-                    latents = latents * self.vae.config.scaling_factor
+                batch = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in
+                         batch.items()}
+                # Convert images to latent space
+                latent_batch = batch["pixel_values"].to(self.device).to(dtype=self.weight_dtype)
+                latents = self.vae.encode(latent_batch).latent_dist.sample().detach()
+                latents = latents * self.vae.config.scaling_factor
+                # Sample noise that we'll add to the latents
+                noise = torch.randn_like(latents)
+                bsz = latents.shape[0]
+                timesteps = torch.randint(low=0, high=self.noise_scheduler.config.num_train_timesteps,
+                                          size=(bsz,), device=latents.device)
+                timesteps = timesteps.long()
+                # Add noise to the latents according to the noise magnitude at each timestep
+                noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
+                # Get the text embedding for conditioning
+                _hs = self.get_text_conditioning(input_ids=batch['input_ids'],
+                                                 input_ids_placeholder_img=batch[
+                                                     'input_ids_placeholder_img'],
+                                                 input_ids_placeholder_new=batch[
+                                                     'input_ids_placeholder_new'],
+                                                 image_embeds=batch['image_embeds'],
+                                                 timesteps=timesteps,
+                                                 device=latents.device)
+                # Predict the noise residual
+                model_pred = self.unet(noisy_latents, timesteps, _hs).sample
+                # Get the target for loss depending on the prediction type
+                if self.noise_scheduler.config.prediction_type == "epsilon":
+                    target = noise
+                elif self.noise_scheduler.config.prediction_type == "v_prediction":
+                    target = self.noise_scheduler.get_velocity(latents, noise, timesteps)
+                else:
+                    raise ValueError(f"Unknown prediction type {self.noise_scheduler.config.prediction_type}")
+                loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
+                loss.backward()
+                self.optimizer.step()
+                self.lr_scheduler.step()
+                self.optimizer.zero_grad()
+                # Let's make sure we don't update any embedding weights besides the newly added token
+                # This isn't really needed, but we'll keep it for consistency with the original code
+                index_no_updates = torch.arange(len(self.tokenizer)) != self.placeholder_new_token_ids
+                with torch.no_grad():
+                    self.text_encoder.get_input_embeddings().weight[
+                        index_no_updates] = orig_embeds_params[index_no_updates]
 
-                    # Sample noise that we'll add to the latents
-                    noise = torch.randn_like(latents)
-                    bsz = latents.shape[0]
-                    timesteps = torch.randint(low=0, high=self.noise_scheduler.config.num_train_timesteps,
-                                              size=(bsz,), device=latents.device)
-                    timesteps = timesteps.long()
-
-                    # Add noise to the latents according to the noise magnitude at each timestep
-                    noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
-
-                    # Get the text embedding for conditioning
-
-                    _hs = self.get_text_conditioning(input_ids=batch['input_ids'],
-                                                     input_ids_placeholder_img=batch[
-                                                         'input_ids_placeholder_img'],
-                                                     input_ids_placeholder_new=batch[
-                                                         'input_ids_placeholder_new'],
-                                                     image_embeds=batch['image_embeds'],
-                                                     timesteps=timesteps,
-                                                     device=latents.device)
-
-                    # Predict the noise residual
-                    model_pred = self.unet(noisy_latents, timesteps, _hs).sample
-
-                    # Get the target for loss depending on the prediction type
-                    if self.noise_scheduler.config.prediction_type == "epsilon":
-                        target = noise
-                    elif self.noise_scheduler.config.prediction_type == "v_prediction":
-                        target = self.noise_scheduler.get_velocity(latents, noise, timesteps)
-                    else:
-                        raise ValueError(f"Unknown prediction type {self.noise_scheduler.config.prediction_type}")
-
-                    loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
-                    self.accelerator.backward(loss)
-
-                    self.optimizer.step()
-                    self.lr_scheduler.step()
-                    self.optimizer.zero_grad()
-
-                    # Let's make sure we don't update any embedding weights besides the newly added token
-                    # This isn't really needed, but we'll keep it for consistency with the original code
-                    index_no_updates = torch.arange(len(self.tokenizer)) != self.placeholder_new_token_ids
-                    with torch.no_grad():
-                        self.accelerator.unwrap_model(self.text_encoder).get_input_embeddings().weight[
-                            index_no_updates] = orig_embeds_params[index_no_updates]
-
-                # Checks if the accelerator has performed an optimization step behind the scenes
-                if self.accelerator.sync_gradients:
-                    progress_bar.update(1)
-                    global_step += 1
-                    self.logger.update_step(step=global_step)
-                    '''
-                    if self._should_save(global_step=global_step):
-                        self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
-                                                           accelerator=self.accelerator,
-                                                           embeds_save_name=f"learned_embeds-steps-{global_step}.bin",
-                                                           mapper_save_name=f"mapper-steps-{global_step}.pt")
-
-                    if self._should_eval(global_step=global_step):
-                        self.validator.infer(accelerator=self.accelerator,
-                                             tokenizer=self.tokenizer,
-                                             text_encoder=self.text_encoder,
-                                             unet=self.unet,
-                                             vae=self.vae,
-                                             num_images_per_prompt=self.cfg.eval.num_validation_images,
-                                             seeds=self.cfg.eval.validation_seeds,
-                                             prompts=self.cfg.eval.validation_prompts,
-                                             step=global_step)
-                    '''
+                progress_bar.update(1)
+                global_step += 1
+                self.logger.update_step(step=global_step)
+                '''
+                if self._should_save(global_step=global_step):
+                    self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
+                                                       accelerator=self.accelerator,
+                                                       embeds_save_name=f"learned_embeds-steps-{global_step}.bin",
+                                                       mapper_save_name=f"mapper-steps-{global_step}.pt")
+                if self._should_eval(global_step=global_step):
+                    self.validator.infer(accelerator=self.accelerator,
+                                         tokenizer=self.tokenizer,
+                                         text_encoder=self.text_encoder,
+                                         unet=self.unet,
+                                         vae=self.vae,
+                                         num_images_per_prompt=self.cfg.eval.num_validation_images,
+                                         seeds=self.cfg.eval.validation_seeds,
+                                         prompts=self.cfg.eval.validation_prompts,
+                                         step=global_step)
+                '''
                 logs = {"total_loss": loss.detach().item(), "lr": self.lr_scheduler.get_last_lr()[0]}
                 progress_bar.set_postfix(**logs)
-                self.accelerator.log(logs, step=global_step)
+                # self.accelerator.log(logs, step=global_step)
 
                 if global_step >= self.cfg.optim.max_train_steps:
                     break
-
-        # Save the final model
-        self.accelerator.wait_for_everyone()
         '''
         if self.accelerator.is_main_process:
             self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
@@ -212,7 +189,6 @@ class Coach:
                                                embeds_save_name=f"learned_embeds-final.bin",
                                                mapper_save_name=f"mapper-final.pt")
         '''
-        self.accelerator.end_training()
 
     def get_text_conditioning(self, input_ids: torch.Tensor,
                               input_ids_placeholder_img: List[int],
@@ -331,13 +307,15 @@ class Coach:
             output_bypass_alpha=self.cfg.model.output_bypass_alpha_img,
             bypass_unconstrained=self.cfg.model.bypass_unconstrained_img)
 
-        return neti_mapper, loaded_iteration
+        return neti_mapper.to(self.device), loaded_iteration
 
     def _init_sd_models(self):
         tokenizer = self._init_tokenizer()
         noise_scheduler = self._init_noise_scheduler()
         text_encoder = self._init_text_encoder()
+        text_encoder = text_encoder.to(self.device)
         image_encoder = self._init_image_encoder()
+        image_encoder = image_encoder.to(self.device)
         image_processor = self._init_image_processor()
         vae = self._init_vae()
         unet = self._init_unet()
@@ -421,7 +399,7 @@ class Coach:
                 repeats=self.cfg.data.repeats,
                 center_crop=self.cfg.data.center_crop,
                 split="train",
-                device=self.accelerator.device
+                device=self.device
             )
         else:
             raise ValueError(f"Unknown dataset type!")
@@ -429,7 +407,6 @@ class Coach:
 
     def _init_dataloader(self, dataset: Dataset) -> torch.utils.data.DataLoader:
         dataloader = torch.utils.data.DataLoader(dataset,
-                                                 multiprocessing_context='spawn',
                                                  batch_size=self.cfg.optim.train_batch_size,
                                                  shuffle=True,
                                                  num_workers=self.cfg.data.dataloader_num_workers)
@@ -437,10 +414,7 @@ class Coach:
 
     def _init_optimizer(self) -> torch.optim.Optimizer:
         if self.cfg.optim.scale_lr:
-            self.cfg.optim.learning_rate = (self.cfg.optim.learning_rate *
-                                            self.cfg.optim.gradient_accumulation_steps *
-                                            self.cfg.optim.train_batch_size *
-                                            self.accelerator.num_processes)
+            self.cfg.optim.learning_rate = (self.cfg.optim.learning_rate * self.cfg.optim.train_batch_size)
         optimizer = torch.optim.AdamW(
             self.text_encoder.text_model.embeddings.mapper.parameters(),  # only optimize the embeddings
             lr=self.cfg.optim.learning_rate,
@@ -459,38 +433,9 @@ class Coach:
         )
         return lr_scheduler
 
-    def _init_accelerator(self) -> Accelerator:
-        accelerator_project_config = ProjectConfiguration(total_limit=self.cfg.log.checkpoints_total_limit)
-        accelerator = Accelerator(
-            gradient_accumulation_steps=self.cfg.optim.gradient_accumulation_steps,
-            mixed_precision=self.cfg.optim.mixed_precision,
-            log_with=self.cfg.log.report_to,
-            project_config=accelerator_project_config,
-        )
-        self.logger.log_message(accelerator.state)
-        if accelerator.is_local_main_process:
-            transformers.utils.logging.set_verbosity_warning()
-            diffusers.utils.logging.set_verbosity_info()
-        else:
-            transformers.utils.logging.set_verbosity_error()
-            diffusers.utils.logging.set_verbosity_error()
-        return accelerator
-
     def _set_model_weight_dtypes(self, weight_dtype: torch.dtype):
-        self.unet.to(self.accelerator.device, dtype=weight_dtype)
-        self.vae.to(self.accelerator.device, dtype=weight_dtype)
-
-    def _get_weight_dtype(self) -> torch.dtype:
-        weight_dtype = torch.float32
-        if self.accelerator.mixed_precision == "fp16":
-            weight_dtype = torch.float16
-        elif self.accelerator.mixed_precision == "bf16":
-            weight_dtype = torch.bfloat16
-        return weight_dtype
-
-    def _init_trackers(self):
-        if self.accelerator.is_main_process:
-            self.accelerator.init_trackers("textual_inversion")
+        self.unet.to(self.device, dtype=weight_dtype)
+        self.vae.to(self.device, dtype=weight_dtype)
 
     def _should_save(self, global_step: int) -> bool:
         return global_step % self.cfg.log.save_steps == 0

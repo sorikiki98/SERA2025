@@ -74,13 +74,13 @@ class FashionIQDataset(Dataset):
         # targ_img_pixel_values = self.get_img_pixel_values_from_path(targ_img_path)
 
         ref_text, target_text = self._get_modifier(safe_idx, reverse=reverse)
-        text_with_img_token = self.placeholder_img_token + " " + ref_text
+        text_with_img_token = self.placeholder_img_token  # + " " + ref_text
 
         img = dict()
         img['pixel_values'] = ref_img_pixel_values
         img['text'] = text_with_img_token
 
-        ref_img_pixel_values = ref_img_pixel_values.unsqueeze(0)
+        ref_img_pixel_values = ref_img_pixel_values.unsqueeze(0).to(self.device)
 
         with torch.no_grad():
             img_features = self.image_encoder(ref_img_pixel_values.to(self.image_encoder.dtype))

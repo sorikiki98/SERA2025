@@ -7,7 +7,7 @@ data:
   train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
   placeholder_img_token: <img_unknown>
   super_category_img_token: photo
-  dataloader_num_workers: 8
+  dataloader_num_workers: 0
 model:
   pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
   pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
@@ -30,5 +30,5 @@ eval:
 optim:
   max_train_steps: 1000
   learning_rate: 1e-3
-  train_batch_size: 2
+  train_batch_size: 8
   gradient_accumulation_steps: 4

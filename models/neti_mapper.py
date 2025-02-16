@@ -82,7 +82,7 @@ class NeTIMapper(nn.Module):
         if self.use_positional_encoding == 1:
             self.encoder = NeTIPositionalEncoding(
                 sigma_t=pe_sigmas.sigma_t,
-                sigma_l=pe_sigmas.sigma_l).cuda()
+                sigma_l=pe_sigmas.sigma_l).cuda().to()
             self.input_dim = num_pe_time_anchors * len(unet_layers)
         elif self.use_positional_encoding == 0:
             self.encoder = BasicEncoder().cuda()

@@ -1,6 +1,6 @@
 data:
   center_crop: false
-  dataloader_num_workers: 8
+  dataloader_num_workers: 0
   dataset: fashion_iq
   placeholder_img_token: <img_unknown>
   repeats: 1
@@ -68,4 +68,4 @@ optim:
   mixed_precision: 'no'
   scale_lr: true
   seed: null
-  train_batch_size: 2
+  train_batch_size: 8
