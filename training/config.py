@@ -108,6 +108,7 @@ class EvalConfig:
     num_denoising_steps: int = 50
     # for learnable_mode==3, which of the `placholder_object_tokens` to include in validation
     eval_placeholder_img_tokens: List[str] = None
+    image_paths: List[str] = None
 
     def __post_init__(self):
         if self.validation_seeds is None:

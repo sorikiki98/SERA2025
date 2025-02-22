@@ -79,7 +79,7 @@ class NeTICLIPTextTransformer(CLIPTextTransformer):
         if input_ids is not None:  # Regular embedding logic
             input_shape = input_ids.size()
             input_ids = input_ids.view(-1, input_shape[-1])
-            hidden_states, _, _, _, _, _, _ = self.embeddings(
+            hidden_states, _, _, _ = self.embeddings(
                 input_ids=input_ids, position_ids=position_ids)
 
         ###########################

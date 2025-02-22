@@ -1,4 +1,3 @@
-
 import ipdb
 import os
 from pathlib import Path
@@ -18,36 +17,30 @@ from training.config import RunConfig
 
 class CheckpointHandler:
 
-    def __init__(self, cfg: RunConfig, placeholder_style_tokens: List[str],
-                 placeholder_style_token_ids: List[int],
-                 placeholder_object_tokens: List[str],
-                 placeholder_object_token_ids: List[int], save_root: Path):
+    def __init__(self, cfg: RunConfig,
+                 placeholder_new_tokens: List[str],
+                 placeholder_new_token_ids: List[int], save_root: Path):
         self.cfg = cfg
-        self.placeholder_style_tokens = placeholder_style_tokens
-        self.placeholder_style_token_ids = placeholder_style_token_ids
-        self.placeholder_object_tokens = placeholder_object_tokens
-        self.placeholder_object_token_ids = placeholder_object_token_ids
         self.save_root = save_root
         # aggregate the tokens
-        self.placeholder_tokens = self.placeholder_style_tokens + self.placeholder_object_tokens
-        self.placeholder_token_ids = self.placeholder_style_token_ids + self.placeholder_object_token_ids
+        self.placeholder_tokens = placeholder_new_tokens
+        self.placeholder_token_ids = placeholder_new_token_ids
 
     def save_model(self, text_encoder: NeTICLIPTextModel,
-                   accelerator: Accelerator, embeds_save_name: str,
+                   embeds_save_name: str,
                    mapper_save_name: str):
-        self.save_learned_embeds(text_encoder, accelerator, embeds_save_name)
+        self.save_learned_embeds(text_encoder, embeds_save_name)
         self.save_mapper(text_encoder, mapper_save_name)
 
     def save_learned_embeds(self, text_encoder: NeTICLIPTextModel,
-                            accelerator: Accelerator, save_name: str):
+                            save_name: str):
         """
         Save learned embeddings. This embedding isn't really learned, but we'll add it to the tokenizer at inference
         to take the place of our placeholder token.
         (this is a weird thing to do, but whatever)
         """
-        learned_embeds = accelerator.unwrap_model(
-            text_encoder).get_input_embeddings().weight[
-                self.placeholder_token_ids]
+        learned_embeds = text_encoder.get_input_embeddings().weight[
+            self.placeholder_token_ids]
         learned_embeds = learned_embeds.detach().cpu()
         learned_embeds_dict = {
             t: v
@@ -67,11 +60,11 @@ class CheckpointHandler:
             for k, mapper_object in mapper_object_lookup.items():
                 state_dict['mappers'][k] = {
                     "state_dict":
-                    mapper_object.state_dict(),
+                        mapper_object.state_dict(),
                     "encoder":
-                    mapper_object.encoder,
+                        mapper_object.encoder,
                     "placeholder_object_token":
-                    mapper_object.placeholder_object_token,
+                        mapper_object.placeholder_object_token,
                 }
             fname = os.path.join(
                 self.save_root,
@@ -108,9 +101,9 @@ class CheckpointHandler:
             del cfg_dict['data']['placeholder_view_tokens']
 
         for k in [
-                'target_norm_object', 'target_norm_view',
-                'pretrained_view_mapper', 'pretrained_view_mapper_key'
-        ]:  
+            'target_norm_object', 'target_norm_view',
+            'pretrained_view_mapper', 'pretrained_view_mapper_key'
+        ]:
             if k in cfg_dict['model'].keys():
                 if cfg_dict['model'][k] is None:
                     del cfg_dict['model'][k]
@@ -127,19 +120,18 @@ class CheckpointHandler:
 
         return cfg_dict
 
-
     @staticmethod
     def load_mapper(
-        mapper_path: Path,
-        embedding_type: Literal["object", "style"] = "object",
-        placeholder_view_tokens: List[str] = None,
-        placeholder_view_token_ids: List[int] = None,
-        placeholder_object_tokens: List[str] = None,
-        placeholder_object_token_ids: List[int] = None,
+            mapper_path: Path,
+            embedding_type: Literal["object", "style"] = "object",
+            placeholder_view_tokens: List[str] = None,
+            placeholder_view_token_ids: List[int] = None,
+            placeholder_object_tokens: List[str] = None,
+            placeholder_object_token_ids: List[int] = None,
     ) -> Tuple[RunConfig, NeTIMapper]:
         """ """
         mapper_ckpt = torch.load(mapper_path, map_location="cpu")
-        cfg_dict = CheckpointHandler.clean_config_dict(mapper_ckpt['cfg']) # some hacks
+        cfg_dict = CheckpointHandler.clean_config_dict(mapper_ckpt['cfg'])  # some hacks
         cfg = pyrallis.decode(RunConfig, mapper_ckpt['cfg'])
 
         # handle the special case of getting the view token_ids from the tokenizer

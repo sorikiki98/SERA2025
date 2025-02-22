@@ -24,10 +24,7 @@ PROMPTS = [
 ]
 
 VALIDATION_PROMPTS = [
-    "A {} has a no v-neck and has two colors.",
-    "A {} without a red belt and is more orange and is shorter",
-    "A {} is not cream with long sleeves and is white and more casual.",
-    "A {} is not green with short sleeves and is darker ion color.",
+    "<img_unknown>",
 ]
 
 IMAGENET_TEMPLATES_SMALL = [

@@ -67,7 +67,7 @@ class NeTICLIPTextEmbeddings(nn.Module):
                     unet_layer=batch.unet_layers.float(),
                     image_embeds=batch.image_embeds,
                     truncation_idx=batch.truncation_idx,
-                )
+                )  # [bs, 1536]
                 # strength of the output bypass -> to pass up to the encoder
                 output_bypass_alpha = mapper.output_bypass_alpha
 

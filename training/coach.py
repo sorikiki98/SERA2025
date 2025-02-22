@@ -83,21 +83,19 @@ class Coach:
         self.lr_scheduler = self._init_scheduler(optimizer=self.optimizer)
 
         # Reconfigure some parameters that we'll need for training
-        self.weight_dtype = torch.float16
+        self.weight_dtype = torch.float32
         self._set_model_weight_dtypes(weight_dtype=self.weight_dtype)
 
-        '''
         self.validator = ValidationHandler(cfg=self.cfg,
                                            placeholder_new_tokens=self.placeholder_new_tokens,
                                            placeholder_new_token_ids=self.placeholder_new_token_ids,
-                                           fixed_object_token=self.fixed_object_token,
-                                           weights_dtype=self.weight_dtype)
+                                           weights_dtype=self.weight_dtype,
+                                           device=self.device)
 
         self.checkpoint_handler = CheckpointHandler(cfg=self.cfg,
                                                     placeholder_new_tokens=self.placeholder_new_tokens,
                                                     placeholder_new_token_ids=self.placeholder_new_token_ids,
                                                     save_root=self.cfg.log.exp_dir)
-        '''
 
     def train(self):
         total_batch_size = self.cfg.optim.train_batch_size
@@ -159,36 +157,32 @@ class Coach:
                 progress_bar.update(1)
                 global_step += 1
                 self.logger.update_step(step=global_step)
-                '''
                 if self._should_save(global_step=global_step):
                     self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
-                                                       accelerator=self.accelerator,
                                                        embeds_save_name=f"learned_embeds-steps-{global_step}.bin",
                                                        mapper_save_name=f"mapper-steps-{global_step}.pt")
                 if self._should_eval(global_step=global_step):
-                    self.validator.infer(accelerator=self.accelerator,
-                                         tokenizer=self.tokenizer,
-                                         text_encoder=self.text_encoder,
-                                         unet=self.unet,
-                                         vae=self.vae,
-                                         num_images_per_prompt=self.cfg.eval.num_validation_images,
-                                         seeds=self.cfg.eval.validation_seeds,
-                                         prompts=self.cfg.eval.validation_prompts,
-                                         step=global_step)
-                '''
+                    self.validator.infer(
+                        tokenizer=self.tokenizer,
+                        text_encoder=self.text_encoder,
+                        image_encoder=self.image_encoder,
+                        image_processor=self.image_processor,
+                        unet=self.unet,
+                        vae=self.vae,
+                        num_images_per_prompt=self.cfg.eval.num_validation_images,
+                        seeds=self.cfg.eval.validation_seeds,
+                        prompts=self.cfg.eval.validation_prompts,
+                        image_paths=self.cfg.eval.image_paths,
+                        step=global_step)
                 logs = {"total_loss": loss.detach().item(), "lr": self.lr_scheduler.get_last_lr()[0]}
                 progress_bar.set_postfix(**logs)
                 # self.accelerator.log(logs, step=global_step)
 
                 if global_step >= self.cfg.optim.max_train_steps:
                     break
-        '''
-        if self.accelerator.is_main_process:
-            self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
-                                               accelerator=self.accelerator,
-                                               embeds_save_name=f"learned_embeds-final.bin",
-                                               mapper_save_name=f"mapper-final.pt")
-        '''
+        self.checkpoint_handler.save_model(text_encoder=self.text_encoder,
+                                           embeds_save_name=f"learned_embeds-final.bin",
+                                           mapper_save_name=f"mapper-final.pt")
 
     def get_text_conditioning(self, input_ids: torch.Tensor,
                               input_ids_placeholder_img: List[int],
@@ -202,7 +196,6 @@ class Coach:
             neti_batch = NeTIBatch(
                 input_ids=input_ids,
                 input_ids_placeholder_img=input_ids_placeholder_img,
-                input_ids_placeholder_new=input_ids_placeholder_new,
                 image_embeds=image_embeds,
                 timesteps=timesteps,
                 unet_layers=torch.tensor(layer_idx, device=device).repeat(timesteps.shape[0])

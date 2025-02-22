@@ -26,7 +26,12 @@ eval:
   num_denoising_steps: 50
   validation_seeds: [ 3, 4, 5 ]
   num_validation_images: 3
-  eval_placeholder_img_tokens: [ <skull>, <statue>, <statue2>, <toy> ]
+  image_paths:
+    - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+    - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+    - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+    - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+    - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
 optim:
   max_train_steps: 1000
   learning_rate: 1e-3

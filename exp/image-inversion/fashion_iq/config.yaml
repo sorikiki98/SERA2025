@@ -8,18 +8,17 @@ data:
   super_category_img_token: photo
   train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
 eval:
-  eval_placeholder_img_tokens:
-  - <skull>
-  - <statue>
-  - <statue2>
-  - <toy>
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
   num_denoising_steps: 50
   num_validation_images: 3
   validation_prompts:
-  - A {} has a no v-neck and has two colors.
-  - A {} without a red belt and is more orange and is shorter
-  - A {} is not cream with long sleeves and is white and more casual.
-  - A {} is not green with short sleeves and is darker ion color.
+  - <img_unknown>
   validation_seeds:
   - 3
   - 4

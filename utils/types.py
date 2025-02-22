@@ -9,7 +9,6 @@ import torch
 class NeTIBatch:
     input_ids: torch.Tensor
     input_ids_placeholder_img: torch.Tensor
-    input_ids_placeholder_new: torch.Tensor
     image_embeds: torch.Tensor
     timesteps: torch.Tensor
     unet_layers: torch.Tensor
