@@ -52,42 +52,23 @@ class CheckpointHandler:
         """ Save the mapper and config to be used at inference. """
         cfg_ = RunConfig(**self.cfg.__dict__.copy())
 
-        mapper_object_lookup, mapper_style = text_encoder.text_model.embeddings.mapper_object_lookup, text_encoder.text_model.embeddings.mapper_style
+        mapper= text_encoder.text_model.embeddings.mapper
 
-        if mapper_object_lookup is not None:
-            state_dict = {"cfg": pyrallis.encode(cfg_), 'mappers': {}}
-
-            for k, mapper_object in mapper_object_lookup.items():
-                state_dict['mappers'][k] = {
-                    "state_dict":
-                        mapper_object.state_dict(),
-                    "encoder":
-                        mapper_object.encoder,
-                    "placeholder_object_token":
-                        mapper_object.placeholder_object_token,
-                }
-            fname = os.path.join(
-                self.save_root,
-                Path(save_name).stem + "_object" + Path(save_name).suffix)
-            torch.save(state_dict, fname)
-
-        if mapper_style is not None:
+        if mapper is not None:
             state_dict = {
                 "cfg": pyrallis.encode(cfg_),
                 'mappers': {
                     'dummy_key': {
-                        "state_dict": mapper_style.state_dict(),
-                        "encoder": mapper_style.encoder,
+                        "state_dict": mapper.state_dict(),
+                        "encoder": mapper.encoder,
                         'placeholder_object_token': "dummy",
                     }
                 }
             }
-            if hasattr(mapper_style, "encode_phi"):
-                state_dict.update({"encode_phi": mapper_style.encode_phi})
 
             fname = os.path.join(
                 self.save_root,
-                Path(save_name).stem + "_view" + Path(save_name).suffix)
+                Path(save_name).stem + Path(save_name).suffix)
             torch.save(state_dict, fname)
 
     @staticmethod

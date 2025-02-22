@@ -23,7 +23,7 @@ eval:
   - 3
   - 4
   - 5
-  validation_steps: 1
+  validation_steps: 100
 log:
   checkpoints_total_limit: null
   exp_dir: exp\image-inversion\fashion_iq

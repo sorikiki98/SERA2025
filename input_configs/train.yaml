@@ -22,7 +22,7 @@ model:
   arch_img_disable_tl: bool = True
   output_bypass_alpha_img: 5
 eval:
-  validation_steps: 1
+  validation_steps: 100
   num_denoising_steps: 50
   validation_seeds: [ 3, 4, 5 ]
   num_validation_images: 3

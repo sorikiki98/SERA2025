@@ -12569,3 +12569,893 @@ optim:
 2025-02-22 19:36:58   Total train batch size (w. parallel, distributed & accumulation) = 8
 2025-02-22 19:36:58   Gradient Accumulation steps = 4
 2025-02-22 19:36:58   Total optimization steps = 1000
+2025-02-22 19:49:29 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 19:49:35 ***** Running training *****
+2025-02-22 19:49:35   Num examples = 11970
+2025-02-22 19:49:35   Instantaneous batch size per device = 8
+2025-02-22 19:49:35   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 19:49:35   Gradient Accumulation steps = 4
+2025-02-22 19:49:35   Total optimization steps = 1000
+2025-02-22 21:01:27 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:01:33 ***** Running training *****
+2025-02-22 21:01:33   Num examples = 11970
+2025-02-22 21:01:33   Instantaneous batch size per device = 8
+2025-02-22 21:01:33   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:01:33   Gradient Accumulation steps = 4
+2025-02-22 21:01:33   Total optimization steps = 1000
+2025-02-22 21:08:11 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:08:17 ***** Running training *****
+2025-02-22 21:08:17   Num examples = 11970
+2025-02-22 21:08:17   Instantaneous batch size per device = 8
+2025-02-22 21:08:17   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:08:17   Gradient Accumulation steps = 4
+2025-02-22 21:08:17   Total optimization steps = 1000
+2025-02-22 21:10:41 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:10:47 ***** Running training *****
+2025-02-22 21:10:47   Num examples = 11970
+2025-02-22 21:10:47   Instantaneous batch size per device = 8
+2025-02-22 21:10:47   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:10:47   Gradient Accumulation steps = 4
+2025-02-22 21:10:47   Total optimization steps = 1000
+2025-02-22 21:12:04 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:12:11 ***** Running training *****
+2025-02-22 21:12:11   Num examples = 11970
+2025-02-22 21:12:11   Instantaneous batch size per device = 8
+2025-02-22 21:12:11   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:12:11   Gradient Accumulation steps = 4
+2025-02-22 21:12:11   Total optimization steps = 1000
+2025-02-22 21:14:38 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:14:44 ***** Running training *****
+2025-02-22 21:14:44   Num examples = 11970
+2025-02-22 21:14:44   Instantaneous batch size per device = 8
+2025-02-22 21:14:44   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:14:44   Gradient Accumulation steps = 4
+2025-02-22 21:14:44   Total optimization steps = 1000
+2025-02-22 21:14:57 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:15:03 ***** Running training *****
+2025-02-22 21:15:03   Num examples = 11970
+2025-02-22 21:15:03   Instantaneous batch size per device = 8
+2025-02-22 21:15:03   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:15:03   Gradient Accumulation steps = 4
+2025-02-22 21:15:03   Total optimization steps = 1000
+2025-02-22 21:16:02 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - Sky blue sleeveless blouse
+  - Hot pink short-sleeve T-shirt
+  - Black sleeveless dress
+  - White sleeveless long dress
+  - Pink dot pajama with ruffled hem
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:16:09 ***** Running training *****
+2025-02-22 21:16:09   Num examples = 11970
+2025-02-22 21:16:09   Instantaneous batch size per device = 8
+2025-02-22 21:16:09   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:16:09   Gradient Accumulation steps = 4
+2025-02-22 21:16:09   Total optimization steps = 1000
+2025-02-22 21:27:58 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - <img_unknown>
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 1
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:28:04 ***** Running training *****
+2025-02-22 21:28:04   Num examples = 11970
+2025-02-22 21:28:04   Instantaneous batch size per device = 8
+2025-02-22 21:28:04   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:28:04   Gradient Accumulation steps = 4
+2025-02-22 21:28:04   Total optimization steps = 1000
+2025-02-22 21:38:33 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - <img_unknown>
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 100
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:38:40 ***** Running training *****
+2025-02-22 21:38:40   Num examples = 11970
+2025-02-22 21:38:40   Instantaneous batch size per device = 8
+2025-02-22 21:38:40   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:38:40   Gradient Accumulation steps = 4
+2025-02-22 21:38:40   Total optimization steps = 1000
+2025-02-22 21:39:45 
+data:
+  center_crop: false
+  dataloader_num_workers: 0
+  dataset: fashion_iq
+  placeholder_img_token: <img_unknown>
+  repeats: 1
+  resolution: 224
+  super_category_img_token: photo
+  train_data_dir: C:\Users\user\KDBC2024\dataset\fashion_iq\
+eval:
+  eval_placeholder_img_tokens: null
+  image_paths:
+  - C:\Users\user\PycharmProjects\SERA2025\image1.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image2.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image3.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image4.jpg
+  - C:\Users\user\PycharmProjects\SERA2025\image5.jpg
+  num_denoising_steps: 50
+  num_validation_images: 3
+  validation_prompts:
+  - <img_unknown>
+  validation_seeds:
+  - 3
+  - 4
+  - 5
+  validation_steps: 100
+log:
+  checkpoints_total_limit: null
+  exp_dir: exp\image-inversion\fashion_iq
+  exp_name: fashion_iq
+  logging_dir: exp\image-inversion\fashion_iq\logs
+  report_to: tensorboard
+  save_steps: 10
+model:
+  arch_img_disable_tl: true
+  arch_mlp_hidden_dims: 64
+  bypass_unconstrained_img: false
+  mapper_checkpoint_path: null
+  nested_dropout_prob: 0.5
+  normalize_img_mapper_output: true
+  num_pe_time_anchors: 10
+  original_ti: false
+  output_bypass_alpha_img: 5.0
+  output_bypass_img: true
+  pe_sigmas:
+    sigma_l: 2.0
+    sigma_t: 0.03
+  pretrained_diffusion_model_name_or_path: CompVis/stable-diffusion-v1-4
+  pretrained_image_model_name_or_path: openai/clip-vit-large-patch14
+  revision: null
+  target_norm_img: null
+  use_nested_dropout: true
+  use_positional_encoding_img: 1
+  word_embedding_dim: 768
+optim:
+  adam_beta1: 0.9
+  adam_beta2: 0.999
+  adam_epsilon: 1.0e-08
+  adam_weight_decay: 0.01
+  allow_tf32: false
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 0.001
+  lr_scheduler: constant
+  lr_warmup_steps: 0
+  max_train_steps: 1000
+  mixed_precision: 'no'
+  scale_lr: true
+  seed: null
+  train_batch_size: 8
+
+2025-02-22 21:40:11 ***** Running training *****
+2025-02-22 21:40:11   Num examples = 11970
+2025-02-22 21:40:11   Instantaneous batch size per device = 8
+2025-02-22 21:40:11   Total train batch size (w. parallel, distributed & accumulation) = 8
+2025-02-22 21:40:11   Gradient Accumulation steps = 4
+2025-02-22 21:40:11   Total optimization steps = 1000

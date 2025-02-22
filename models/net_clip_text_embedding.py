@@ -86,8 +86,9 @@ class NeTICLIPTextEmbeddings(nn.Module):
                 # replace special token embedding.
                 locs = (input_ids ==
                         batch.input_ids_placeholder_img.unsqueeze(1))
-                assert all(locs.sum(1) == 1)
-                inputs_embeds[torch.where(locs)] = word_embedding
+                # assert all(locs.sum(1) == 1)
+                if all(locs.sum(1) == 1):
+                    inputs_embeds[torch.where(locs)] = word_embedding
 
         position_embeddings = self.position_embedding(position_ids)
         embeddings = inputs_embeds + position_embeddings
